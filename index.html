@@ -1,0 +1,2739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ТРИ КОРОНЫ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9963A;
+  --gold-light: #E8C87A;
+  --gold-dim: rgba(201,150,58,0.15);
+  --gold-glow: rgba(201,150,58,0.35);
+  --navy: #0D1B2A;
+  --navy-2: #152234;
+  --navy-3: #1C2E44;
+  --navy-4: #243650;
+  --glass: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.08);
+  --success: #2EC98A;
+  --success-dim: rgba(46,201,138,0.15);
+  --danger: #FF5A5A;
+  --danger-dim: rgba(255,90,90,0.15);
+  --pending: #A78BFA;
+  --pending-dim: rgba(167,139,250,0.15);
+  --checkout: #FB923C;
+  --checkout-dim: rgba(251,146,60,0.15);
+  --text: #E8E4DC;
+  --text-muted: #8A9BB0;
+  --text-dim: #4A5E75;
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  /* ── НОВЫЕ: статусы столов ── */
+  --table-free-color:     #e3d4d4;
+  --table-free-dim:       rgba(46,201,138,0.12);
+  --table-busy-color:     #36ee39;
+  --table-busy-dim:       rgba(87, 201, 46, 0.12);
+  --table-booked-color:   #FBBF24;
+  --table-booked-dim:     #a78bfa5e;
+  --table-cleaning-color: #64748B;
+  --table-cleaning-dim:   rgba(100,116,139,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── TOP BAR ─── */
+.top-bar {
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  z-index: 200;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border-right: 1px solid var(--glass-border);
+  height: 52px;
+}
+
+.brand-crowns { font-size: 18px; letter-spacing: 2px; }
+
+.brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.role-tabs { display: flex; gap: 0; height: 52px; padding: 0 8px; }
+
+.role-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.role-tab:hover { color: var(--text); }
+.role-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.role-tab .tab-icon { font-size: 15px; }
+
+/* ─── STATS BAR ─── */
+.stats-bar {
+  background: var(--navy-3);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 6px;
+  height: 44px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+
+.stat-chip .icon { font-size: 13px; }
+.stat-chip .label { color: var(--text-muted); }
+.stat-chip .val { color: var(--gold); font-weight: 600; }
+.stat-chip.danger .val { color: var(--danger); }
+.stat-chip.pending .val { color: var(--pending); }
+.stat-chip.checkout-chip { cursor: pointer; }
+.stat-chip.checkout-chip .val { color: var(--checkout); }
+.stat-chip.checkout-chip:hover { border-color: var(--checkout); }
+
+.stats-spacer { flex: 1; }
+
+/* ─── ADMIN HEADER ─── */
+.admin-header {
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 52px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.zone-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.3);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.zone-tab {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.zone-tab.active { background: var(--gold); color: var(--navy); }
+
+.header-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+
+.hbtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.hbtn:hover { background: rgba(255,255,255,0.08); border-color: rgba(15, 22, 169, 0.15); }
+.hbtn.gold { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.hbtn.gold:hover { background: var(--gold); color: var(--navy); }
+.hbtn.success { background: var(--success-dim); border-color: var(--success); color: var(--success); }
+.hbtn.success:hover { background: var(--success); color: var(--navy); }
+.hbtn.danger-btn { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+.hbtn.pending-btn { background: var(--pending-dim); border-color: var(--pending); color: var(--pending); }
+.hbtn.checkout-btn { background: var(--checkout-dim); border-color: var(--checkout); color: var(--checkout); }
+.mobile-queue-btn { display: none; }
+
+/* ─── MAIN LAYOUT ─── */
+.main-layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--navy-2);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.close-sidebar-btn {
+  display: none;
+  cursor: pointer;
+  font-size: 18px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 2px 6px;
+}
+
+.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+/* ─── QUEUE CARDS ─── */
+.guest-card {
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.guest-card:hover { border-color: rgba(255,255,255,0.12); }
+
+.guest-card.checkout-today {
+  border-color: var(--danger);
+  background: linear-gradient(135deg, var(--navy-3), rgba(255,90,90,0.05));
+}
+
+.guest-card b { font-size: 13px; color: var(--text); }
+.guest-card small { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+.guest-card .edit-btn {
+  position: absolute;
+  right: 8px; top: 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 7px;
+  transition: all 0.2s;
+}
+
+.guest-card .edit-btn:hover { color: var(--gold); border-color: var(--gold); }
+.checkout-icon { color: var(--danger); font-weight: 600; font-size: 11px; }
+
+.note-preview-sm {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(201,150,58,0.08);
+  border: 1px solid rgba(201,150,58,0.2);
+  border-radius: 5px;
+  padding: 4px 8px;
+  margin-top: 5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* ─── MAP ─── */
+.map-area {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  background-color: #0A1520;
+  background-image:
+    linear-gradient(rgba(201,150,58,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,150,58,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.map-area.dragging-table { touch-action: none; }
+
+#mapCanvas {
+  position: relative;
+  width: 2400px;
+  height: 1600px;
+}
+
+/* ─── ТАБЛИЦЫ — БАЗОВЫЕ СТИЛИ ─── */
+.table {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  text-align: center;
+  z-index: 50;
+  touch-action: none;
+  padding: 6px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  /* Базовый фон — переопределяется статус-классом */
+  background: var(--navy-3);
+  border: 2.5px solid var(--navy-4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.table b { font-size: 16px; color: var(--text); font-weight: 600; line-height: 1; }
+
+/* ── СТАТУСЫ СТОЛА: ЦВЕТОВОЕ КОДИРОВАНИЕ ── */
+
+/* СВОБОДЕН — зелёный */
+.table.tbl-free {
+  border-color: var(--table-free-color);
+  background: var(--table-free-dim);
+  box-shadow: 0 0 0 4px rgba(46,201,138,0.07), 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-free b { color: var(--table-free-color); }
+
+/* ЗАНЯТ — красный */
+.table.tbl-busy,
+.table.occupied {
+  border-color: var(--table-busy-color);
+  background: var(--table-busy-dim);
+  box-shadow: 0 0 0 4px rgba(255,90,90,0.07), 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-busy b,
+.table.occupied b { color: var(--table-busy-color); }
+
+/* В ПУТИ / ЗАБРОНИРОВАН — жёлтый с пульсацией */
+.table.tbl-booked,
+.table.pending {
+  border-color: var(--table-booked-color);
+  background: var(--table-booked-dim);
+  box-shadow: 0 0 0 4px rgba(251,191,36,0.07), 0 4px 20px rgba(0,0,0,0.4);
+  animation: pulse-booked 2.5s ease-in-out infinite;
+}
+.table.tbl-booked b,
+.table.pending b { color: var(--table-booked-color); }
+
+@keyframes pulse-booked {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+/* УБОРКА / СЧЁТ — серый */
+.table.tbl-cleaning {
+  border-color: var(--table-cleaning-color);
+  background: var(--table-cleaning-dim);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-cleaning b { color: #94A3B8; }
+
+/* Предупреждение выезда — оверрайд рамки */
+.table.checkout-warning {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(255,90,90,0.3), 0 4px 20px rgba(255,90,90,0.2) !important;
+}
+
+.table.modified {
+  box-shadow: 0 0 0 3px rgba(201,150,58,0.4), 0 4px 20px rgba(201,150,58,0.2);
+}
+
+.table.hold-active {
+  transform: scale(1.1);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 2px var(--gold);
+  z-index: 1000;
+}
+
+.table .guest-name  { font-size: 9px; color: var(--text-muted); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.table .portion-line{ font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+.table .meal-line   { font-size: 8px; color: var(--gold); line-height: 1.2; margin-top: 2px; max-width: 90px; }
+.table .note-line   { font-size: 9px; color: var(--pending); margin-top: 2px; }
+.table .waiter-line { font-size: 8px; color: var(--gold-light); font-weight: 500; margin-top: 2px; opacity: 0.7; }
+
+.change-alert {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 12px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  z-index: 60;
+}
+
+.checkout-dot {
+  position: absolute;
+  top: -4px; left: -4px;
+  background: var(--danger);
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+}
+
+/* ─── MAP HINT ─── */
+.map-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,27,42,0.85);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  z-index: 190;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+/* ─── MODALS ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 900;
+  display: none;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: none;
+  width: 92%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+#guestModal { z-index: 1100; }
+#archiveDetailModal { z-index: 1100; }
+
+.modal h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 18px;
+}
+
+/* ─── FORM ELEMENTS ─── */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  margin-top: 6px;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+select option { background: var(--navy-2); }
+textarea { resize: vertical; min-height: 60px; }
+
+.field-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  display: block;
+  letter-spacing: 0.5px;
+}
+
+.input-row { display: flex; gap: 8px; }
+.input-row > * { flex: 1; }
+
+/* ── УЛУЧШЕННЫЕ СЕКЦИИ ФОРМЫ ── */
+.form-block {
+  margin-top: 14px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.form-block-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.form-block-legend span { font-size: 14px; }
+.form-block-body { padding: 14px; background: rgba(0,0,0,0.10); }
+
+/* Поля внутри form-block: убираем лишний margin-top у первого label */
+.form-block-body .field-label:first-child { margin-top: 0; }
+
+/* Старый form-section — оставляем для совместимости */
+.form-section {
+  margin-top: 12px;
+  border: 1px solid var(--glass-border);
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+}
+
+.form-section label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  width: 100%;
+  margin-top: 10px;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.btn-gold    { background: var(--gold); color: var(--navy); }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-success { background: var(--success); color: var(--navy); }
+.btn-success:hover { filter: brightness(1.1); }
+.btn-danger  { background: var(--danger); color: white; }
+.btn-danger:hover { filter: brightness(1.1); }
+.btn-ghost   { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); }
+.btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.btn-delete-table {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(255,90,90,0.3);
+  border-radius: 10px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.btn-delete-table:hover { background: var(--danger); color: white; }
+
+/* ─── CALENDAR ─── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.day-box {
+  padding: 8px 6px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+}
+
+.day-box.active {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+  box-shadow: 0 0 0 1px rgba(201,150,58,0.2);
+}
+
+.meal-mini-tag {
+  display: inline-block;
+  min-width: 18px; height: 18px;
+  line-height: 18px;
+  border-radius: 4px;
+  margin: 1px;
+  font-weight: 600;
+  font-size: 9px;
+  background: var(--navy-4);
+  color: var(--text-dim);
+}
+
+.meal-mini-tag.on     { background: var(--gold); color: var(--navy); }
+.meal-mini-tag.locked { opacity: 0.4; cursor: not-allowed; }
+
+.meal-day-editor {
+  display: none;
+  margin-top: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.meal-day-title   { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--gold); }
+.meal-day-current { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+
+.meal-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+}
+
+.meal-row button {
+  margin: 0; padding: 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--gold-dim);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.meal-row button.off { background: var(--navy-4); color: var(--text-muted); border-color: transparent; }
+.meal-row .count-wrap { display: flex; flex-direction: column; gap: 3px; }
+.meal-row .count-wrap label { font-size: 10px; color: var(--text-muted); }
+.meal-row .count-wrap input { margin-top: 0; padding: 7px; font-size: 12px; }
+
+.meal-quick-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+
+.q-btn {
+  font-size: 11px;
+  padding: 8px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.q-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ─── INFO BOX ─── */
+.info-box {
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,150,58,0.3);
+  color: var(--gold-light);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ─── TABLE MODAL ─── */
+#occData { font-size: 13px; color: var(--text); line-height: 1.8; margin-bottom: 10px; }
+#occData b { color: var(--gold); }
+#occData span { color: var(--gold-light); }
+
+.note-preview {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(201,150,58,0.06);
+  border: 1px solid rgba(201,150,58,0.15);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.waiter-block { margin-top: 16px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
+.waiter-block label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: var(--text); }
+
+/* ─── LIST MODAL ─── */
+.muted { color: var(--text-muted); font-size: 12px; }
+.search-box { margin-bottom: 10px; }
+
+.list-item {
+  padding: 12px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
+.list-item:hover { background: var(--navy-3); }
+
+.checkout-list-item {
+  padding: 12px 14px;
+  border-left: 3px solid var(--checkout);
+  background: rgba(251,146,60,0.05);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.archive-day-line {
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  margin-top: 6px;
+  background: var(--navy-3);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── CHEF PANEL ─── */
+#chefPanel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--navy);
+  padding: 24px;
+  flex-direction: column;
+}
+
+#chefPanel::-webkit-scrollbar { width: 4px; }
+#chefPanel::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+.chef-header { text-align: center; margin-bottom: 28px; }
+
+.chef-title-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.chef-date-text { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+.chef-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto 32px;
+}
+
+.chef-card {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.chef-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.chef-card.breakfast::before { background: #F1C40F; }
+.chef-card.lunch::before     { background: var(--success); }
+.chef-card.dinner::before    { background: var(--danger); }
+
+.chef-emoji     { font-size: 24px; margin-bottom: 6px; }
+.chef-meal-name { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+.chef-num       { font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 700; line-height: 1; margin: 4px 0; }
+.chef-card.breakfast .chef-num { color: #F1C40F; }
+.chef-card.lunch .chef-num     { color: var(--success); }
+.chef-card.dinner .chef-num    { color: var(--danger); }
+.chef-sub { font-size: 12px; color: var(--text-muted); }
+
+.chef-section-title {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 auto 12px;
+  max-width: 560px;
+}
+
+.chef-breakdown {
+  max-width: 560px;
+  margin: 0 auto 12px;
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.chef-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+}
+
+.chef-breakdown-row:last-child { border-bottom: none; }
+.chef-breakdown-row .label { color: var(--text-muted); }
+.chef-breakdown-row .values { display: flex; gap: 12px; }
+.val-b { color: #F1C40F; font-weight: 600; }
+.val-l { color: var(--success); font-weight: 600; }
+.val-d { color: var(--danger); font-weight: 600; }
+
+/* ─── WAITER PANEL ─── */
+#waiterPanel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--navy);
+  padding: 16px;
+  flex-direction: column;
+}
+
+#waiterPanel::-webkit-scrollbar { width: 4px; }
+#waiterPanel::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+.waiter-select-bar {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.waiter-select-bar label { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; }
+
+/* ── НОВЫЕ: компактные карточки официанта ── */
+.waiter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 12px;
+}
+
+.wtc-card {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-top: 3px solid var(--navy-4);
+  border-radius: var(--radius);
+  padding: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  position: relative;
+}
+
+.wtc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+
+.wtc-card.wc-free     { border-top-color: var(--text-dim); }
+.wtc-card.wc-occupied { border-top-color: var(--success); }
+.wtc-card.wc-pending  { border-top-color: var(--pending); }
+.wtc-card.wc-checkout { border-top-color: var(--danger); }
+
+.wtc-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.wtc-guest {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.wtc-meal { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4; }
+
+.wtc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.wtc-timer { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.wtc-timer.overtime { color: var(--danger); }
+.wtc-bill  { font-size: 11px; font-weight: 600; color: var(--gold); }
+
+.wtc-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.wtc-badge.free     { background: var(--navy-4);       color: var(--text-dim); }
+.wtc-badge.occupied { background: var(--success-dim);  color: var(--success); border: 1px solid rgba(46,201,138,0.3); }
+.wtc-badge.pending  { background: var(--pending-dim);  color: var(--pending); border: 1px solid rgba(167,139,250,0.3); }
+.wtc-badge.checkout { background: var(--danger-dim);   color: var(--danger);  border: 1px solid rgba(255,90,90,0.3); }
+
+/* ─── CUSTOM PROMPT MODAL ─── */
+#promptModal {
+  max-width: 380px;
+  z-index: 1600;
+  animation: modal-in 0.18s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -52%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+#promptOverlay { z-index: 1500; }
+
+.cpbtn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cpbtn-ok     { background: var(--gold); color: var(--navy); }
+.cpbtn-ok:hover { background: var(--gold-light); }
+.cpbtn-cancel { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); }
+.cpbtn-cancel:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+}
+
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── MOBILE DRAWER ─── */
+.queue-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1100;
+  backdrop-filter: blur(2px);
+}
+
+.queue-backdrop.active { display: block; }
+
+/* ─── MOBILE ─── */
+@media (max-width: 768px) {
+  .brand-name { display: none; }
+  .brand-crowns { font-size: 16px; }
+  .brand { padding: 0 12px; }
+
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 88%;
+    max-width: 300px;
+    height: 100%;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    border-right: 1px solid var(--glass-border);
+    display: flex !important;
+  }
+
+  .sidebar.open-drawer { transform: translateX(0); }
+  .mobile-queue-btn { display: flex !important; }
+  .close-sidebar-btn { display: block !important; }
+
+  .header-actions .hbtn span { display: none; }
+  .header-actions .hbtn { padding: 6px 10px; }
+
+  .chef-grid { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .chef-num { font-size: 36px; }
+
+  .stats-bar { gap: 4px; padding: 0 8px; }
+  .stat-chip { padding: 4px 8px; font-size: 11px; }
+
+  .waiter-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 3px; }
+
+#archiveClearRow { margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="brand">
+    <span class="brand-crowns">👑👑👑</span>
+    <span class="brand-name">Три Короны</span>
+  </div>
+  <div class="role-tabs">
+    <button class="role-tab active" id="roleAdmin"  onclick="switchRole('admin')">
+      <span class="tab-icon">👑</span> Администратор
+    </button>
+    <button class="role-tab" id="roleWaiter" onclick="switchRole('waiter')">
+      <span class="tab-icon">👔</span> Официант
+    </button>
+    <button class="role-tab" id="roleChef" onclick="switchRole('chef')">
+      <span class="tab-icon">👨‍🍳</span> Повар
+    </button>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-chip">
+    <span class="icon">☕</span>
+    <span class="label">Завтрак</span>
+    <span class="val" id="countB">0в + 0д</span>
+  </div>
+  <div class="stat-chip">
+    <span class="icon">🍲</span>
+    <span class="label">Обед</span>
+    <span class="val" id="countL">0в + 0д</span>
+  </div>
+  <div class="stat-chip">
+    <span class="icon">🍽️</span>
+    <span class="label">Ужин</span>
+    <span class="val" id="countD">0в + 0д</span>
+  </div>
+  <div class="stat-chip checkout-chip" onclick="showCheckoutsToday()">
+    <span class="icon">🚪</span>
+    <span class="label">Выезд</span>
+    <span class="val checkout" id="countCheckout">0</span>
+  </div>
+  <div class="stats-spacer"></div>
+  <div class="stat-chip pending">
+    <span class="icon">🚶</span>
+    <span class="label">В пути</span>
+    <span class="val" id="countPending">0</span>
+  </div>
+</div>
+
+<!-- ADMIN HEADER -->
+<div class="admin-header" id="adminHeader">
+  <div class="zone-tabs">
+    <button class="zone-tab active" onclick="switchZone('main', event)">Зал</button>
+    <button class="zone-tab" onclick="switchZone('big_terrace', event)">Б. Терраса</button>
+    <button class="zone-tab" onclick="switchZone('small_terrace', event)">М. Терраса</button>
+  </div>
+  <div class="header-actions">
+    <button class="hbtn mobile-queue-btn" id="mobileQueueToggleBtn">📋 <span>Очередь</span></button>
+    <button class="hbtn checkout-btn" onclick="showCheckoutsToday()">🚪 <span>Выезды</span></button>
+    <button class="hbtn pending-btn" onclick="showPendingGuests()">🚶 <span>В пути</span></button>
+    <button class="hbtn" onclick="showAllGuests()">📋 <span>Все</span></button>
+    <button class="hbtn" onclick="showArchive()">📜 <span>Архив</span></button>
+    <button class="hbtn gold" onclick="addNewTable()">+ <span>Стол</span></button>
+    <button class="hbtn success" onclick="openGuestModal()">+ <span>Гость</span></button>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div id="adminLayout" style="display:flex; flex:1; overflow:hidden;">
+  <div class="sidebar" id="queueSidebar">
+    <div class="sidebar-header">
+      📋 Очередь
+      <button class="close-sidebar-btn" id="closeQueueBtn">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <div id="unassignedList"></div>
+    </div>
+  </div>
+  <div class="queue-backdrop" id="queueBackdrop"></div>
+  <div class="map-area" id="mapArea">
+    <div id="mapCanvas"></div>
+  </div>
+</div>
+
+<!-- CHEF PANEL -->
+<div id="chefPanel">
+  <div class="chef-header">
+    <div class="chef-title-text">Панель повара</div>
+    <div class="chef-date-text" id="chefDate"></div>
+  </div>
+  <div class="chef-grid">
+    <div class="chef-card breakfast">
+      <div class="chef-emoji">☕</div>
+      <div class="chef-meal-name">Завтрак</div>
+      <div class="chef-num" id="chefB_total">0</div>
+      <div class="chef-sub" id="chefB_sub">0в + 0д</div>
+    </div>
+    <div class="chef-card lunch">
+      <div class="chef-emoji">🍲</div>
+      <div class="chef-meal-name">Обед</div>
+      <div class="chef-num" id="chefL_total">0</div>
+      <div class="chef-sub" id="chefL_sub">0в + 0д</div>
+    </div>
+    <div class="chef-card dinner">
+      <div class="chef-emoji">🍽️</div>
+      <div class="chef-meal-name">Ужин</div>
+      <div class="chef-num" id="chefD_total">0</div>
+      <div class="chef-sub" id="chefD_sub">0в + 0д</div>
+    </div>
+  </div>
+  <div class="chef-section-title">Гости на сегодня</div>
+  <div class="chef-breakdown" id="chefBreakdown"></div>
+  <div class="chef-section-title" style="margin-top:20px;">Выезжают сегодня</div>
+  <div class="chef-breakdown" id="chefCheckouts"></div>
+</div>
+
+<!-- WAITER PANEL -->
+<div id="waiterPanel">
+  <div class="waiter-select-bar">
+    <label>Официант:</label>
+    <select id="waiterSelector" onchange="renderWaiterPanel()" style="margin-top:0; flex:1;">
+      <option value="">— Выбрать —</option>
+      <option value="Анна">Анна</option>
+      <option value="Максим">Максим</option>
+      <option value="Дарья">Дарья</option>
+      <option value="Ильяс">Ильяс</option>
+      <option value="Айжан">Айжан</option>
+      <option value="Сергей">Сергей</option>
+      <option value="Нурлан">Нурлан</option>
+    </select>
+  </div>
+  <div id="waiterTablesList"></div>
+</div>
+
+<div class="map-hint" id="mapHint">Удерживай стол 0.4с чтобы переместить · Листай карту рукой</div>
+<div id="toast"></div>
+<div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+<!-- GUEST MODAL — обновлённая структура с секциями -->
+<div class="modal" id="guestModal">
+  <h3>Данные гостя</h3>
+
+  <!-- СЕКЦИЯ 1: Личные данные -->
+  <div class="form-block">
+    <div class="form-block-legend"><span>👤</span> Личные данные</div>
+    <div class="form-block-body">
+      <label class="field-label">Комната</label>
+      <input type="text" id="gRoom" placeholder="101">
+      <label class="field-label">Имя гостя</label>
+      <input type="text" id="gName" placeholder="Имя гостя">
+      <label class="field-label">Состав (взрослые / дети)</label>
+      <div class="input-row">
+        <input type="number" id="gAdults" placeholder="Взрослые" value="1" min="0">
+        <input type="number" id="gKids"   placeholder="Дети"     value="0" min="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- СЕКЦИЯ 2: Детали заезда -->
+  <div class="form-block">
+    <div class="form-block-legend"><span>📅</span> Детали заезда</div>
+    <div class="form-block-body">
+      <label class="field-label">Дата выезда</label>
+      <input type="date" id="gOut" onchange="generateCalendar(true)">
+      <label class="field-label">Время выезда</label>
+      <select id="gOutTime" onchange="generateCalendar(true)">
+        <option value="B">После завтрака</option>
+        <option value="L">После обеда</option>
+        <option value="D">После ужина</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- СЕКЦИЯ 3: Питание и заметки -->
+  <div class="form-block">
+    <div class="form-block-legend"><span>🍽️</span> Питание и пожелания</div>
+    <div class="form-block-body">
+      <label class="field-label">Тип питания</label>
+      <select id="gMealPlan" onchange="generateCalendar(true)">
+        <option value="B">Только завтрак</option>
+        <option value="BL">Завтрак + обед</option>
+        <option value="FULL">Полное питание</option>
+      </select>
+      <div class="muted" style="margin-top:6px;">На дате выезда питание ограничивается автоматически</div>
+      <label class="field-label">📝 Заметки (аллергии, пожелания)</label>
+      <textarea id="gNotes" placeholder="Например: аллергия на орехи, VIP..."></textarea>
+    </div>
+  </div>
+
+  <div id="calendarContainer" class="calendar-grid"></div>
+
+  <div id="dayEditor" class="meal-day-editor">
+    <div class="meal-day-title" id="selectedDayTitle"></div>
+    <div class="meal-day-current" id="selectedDayInfo"></div>
+    <div class="meal-quick-btns">
+      <button class="q-btn" onclick="setSelectedDayPlan('B')">Только завтрак</button>
+      <button class="q-btn" onclick="setSelectedDayPlan('BL')">Завтрак + обед</button>
+      <button class="q-btn" onclick="setSelectedDayPlan('FULL')">Полное питание</button>
+      <button class="q-btn" onclick="clearSelectedDayMeals()">Убрать всё</button>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealB" onclick="setMealEnabledInSelectedDay('B')">Завтрак</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayBA" min="0" oninput="updateSelectedMealCount('B','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayBK" min="0" oninput="updateSelectedMealCount('B','K',this.value)"></div>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealL" onclick="setMealEnabledInSelectedDay('L')">Обед</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayLA" min="0" oninput="updateSelectedMealCount('L','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayLK" min="0" oninput="updateSelectedMealCount('L','K',this.value)"></div>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealD" onclick="setMealEnabledInSelectedDay('D')">Ужин</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayDA" min="0" oninput="updateSelectedMealCount('D','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayDK" min="0" oninput="updateSelectedMealCount('D','K',this.value)"></div>
+    </div>
+  </div>
+
+  <div class="meal-quick-btns">
+    <button class="q-btn" onclick="bulkMeal('L')">+ Обед на все дни</button>
+    <button class="q-btn" onclick="bulkMeal('full')">З+О+У на все дни</button>
+  </div>
+
+  <button class="btn btn-success" onclick="saveGuest()">Сохранить</button>
+  <button class="btn btn-ghost" onclick="closeModal('guestModal')">Закрыть</button>
+</div>
+
+<!-- TABLE MODAL -->
+<div class="modal" id="tableModal">
+  <h3 id="tTitle">Стол №</h3>
+  <div id="mealAlert" class="info-box" style="display:none">⚡ <b>Изменено!</b> <span id="mDiff"></span></div>
+  <div id="assignForm">
+    <select id="selGuest"></select>
+    <button class="btn btn-success" onclick="assignToTable()">Посадить за стол</button>
+  </div>
+  <div id="occForm" style="display:none">
+    <div id="occData"></div>
+    <div id="occNotes" class="note-preview" style="display:none"></div>
+    <button id="arrBtn" class="btn" style="background:var(--pending-dim);border:1px solid var(--pending);color:var(--pending);" onclick="confirmArrival()">✅ Подтвердить прибытие</button>
+    <button class="btn btn-ghost" style="border-color:rgba(255,90,90,0.3);color:var(--danger);" onclick="freeTable()">Освободить стол</button>
+  </div>
+  <div class="waiter-block">
+    <label>👔 Официант за этим столом</label>
+    <select id="tblWaiterSel">
+      <option value="">— Не назначен —</option>
+      <option value="Анна">Анна</option>
+      <option value="Максим">Максим</option>
+      <option value="Дарья">Дарья</option>
+      <option value="Ильяс">Ильяс</option>
+      <option value="Айжан">Айжан</option>
+      <option value="Сергей">Сергей</option>
+      <option value="Нурлан">Нурлан</option>
+    </select>
+    <button class="btn btn-success" onclick="saveWaiter()" style="margin-top:8px;">💾 Сохранить официанта</button>
+  </div>
+  <button class="btn-delete-table" onclick="deleteCurrentTable()">🗑️ Удалить этот стол</button>
+  <button class="btn btn-ghost" style="margin-top:8px;" onclick="closeAllModals()">Закрыть</button>
+</div>
+
+<!-- LIST MODAL -->
+<div class="modal" id="listModal">
+  <h3 id="listTitle"></h3>
+  <input id="listSearch" class="search-box" type="text" placeholder="Поиск..." style="display:none" oninput="renderCurrentList()">
+  <div id="listContent"></div>
+  <div id="archiveClearRow" style="display:none; margin-top:10px;">
+    <button class="btn btn-danger" onclick="confirmClearArchive()">🗑️ Очистить весь архив</button>
+    <div class="muted" style="margin-top:6px; text-align:center;">Записи старше 7 дней удаляются автоматически</div>
+  </div>
+  <button class="btn btn-ghost" onclick="closeAllModals()">Закрыть</button>
+</div>
+
+<!-- ARCHIVE DETAIL MODAL -->
+<div class="modal" id="archiveDetailModal">
+  <h3>Архивная запись</h3>
+  <div id="archiveDetailContent"></div>
+  <button class="btn btn-ghost" onclick="closeModal('archiveDetailModal')">Закрыть</button>
+</div>
+
+<!-- КАСТОМНЫЙ PROMPT — замена браузерного prompt() -->
+<div class="overlay" id="promptOverlay"></div>
+<div class="modal" id="promptModal">
+  <h3 id="promptTitle">Введите значение</h3>
+  <p id="promptSubtitle" style="font-size:13px;color:var(--text-muted);margin:-10px 0 14px;"></p>
+  <input type="text" id="promptInput" style="font-size:15px;">
+  <div style="display:flex;gap:8px;margin-top:14px;">
+    <button class="cpbtn cpbtn-cancel" id="promptCancel">Отмена</button>
+    <button class="cpbtn cpbtn-ok"     id="promptOk">OK</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+    getFirestore, collection, addDoc, onSnapshot,
+    updateDoc, doc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyChj4N2YdVSWVOdZdjgXzKQ639vvMf-T7k",
+    authDomain: "hotel-46173.firebaseapp.com",
+    projectId: "hotel-46173",
+    storageBucket: "hotel-46173.firebasestorage.app",
+    messagingSenderId: "484899892589",
+    appId: "1:484899892589:web:d54b67a62c97d13b293e64",
+    measurementId: "G-MG903BWS2Y"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const WAITERS_LIST = ["Анна","Максим","Дарья","Ильяс","Айжан","Сергей","Нурлан"];
+
+let currentZone      = 'main';
+let selectedTableId  = null;
+let editingGuestId   = null;
+let selectedDayIndex = null;
+let allGuests        = [];
+let allTables        = [];
+let guestCalendar    = [];
+let currentListMode  = '';
+let currentListItems = [];
+let currentRole      = 'admin';
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// ── Хранилище DOM-узлов столов (ключ: id стола)
+// Позволяет обновлять только изменившиеся столы без перерисовки всей карты
+const tableNodeMap = new Map();
+
+function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+const mealTemplates = {
+    B:    { B: true,  L: false, D: false },
+    BL:   { B: true,  L: true,  D: false },
+    FULL: { B: true,  L: true,  D: true  },
+    NONE: { B: false, L: false, D: false }
+};
+
+const checkoutLimits = {
+    B: { B: true, L: false, D: false },
+    L: { B: true, L: true,  D: false },
+    D: { B: true, L: true,  D: true  }
+};
+
+const formatDateLocal = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth()+1).padStart(2,'0');
+    const d = String(date.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+};
+
+const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y,m,d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);
+};
+
+const getTodayStr  = () => formatDateLocal(new Date());
+const shortDate    = (str) => { if (!str) return ''; const [,m,d] = str.split('-'); return `${d}.${m}`; };
+const toInt        = (v)   => Math.max(0, parseInt(v)||0);
+
+const normalizeOutTime = (v) => {
+    if (v==='B'||v==='L'||v==='D') return v;
+    if (v==='Завтрака'||v==='После завтрака') return 'B';
+    if (v==='Обеда'   ||v==='После обеда')    return 'L';
+    if (v==='Ужина'   ||v==='После ужина')     return 'D';
+    return 'B';
+};
+
+const outTimeLabel  = (v) => { const x=normalizeOutTime(v); if(x==='B') return 'После завтрака'; if(x==='L') return 'После обеда'; return 'После ужина'; };
+const mealPlanLabel = (v) => { if(v==='B') return 'Только завтрак'; if(v==='BL') return 'Завтрак + обед'; if(v==='FULL') return 'Полное питание'; return 'Индивидуально'; };
+const cloneState    = (s) => ({ B: !!s.B, L: !!s.L, D: !!s.D });
+
+const getCurrentBaseCounts = () => ({
+    adults: toInt(document.getElementById('gAdults').value),
+    kids:   toInt(document.getElementById('gKids').value)
+});
+
+const makeDayObject = (date,B,L,D,BA,BK,LA,LK,DA,DK) => ({ date,B,L,D,BA,BK,LA,LK,DA,DK });
+
+const sanitizeDay = (day) => ({
+    date: day.date,
+    B:!!day.B, L:!!day.L, D:!!day.D,
+    BA: !!day.B ? toInt(day.BA) : 0,
+    BK: !!day.B ? toInt(day.BK) : 0,
+    LA: !!day.L ? toInt(day.LA) : 0,
+    LK: !!day.L ? toInt(day.LK) : 0,
+    DA: !!day.D ? toInt(day.DA) : 0,
+    DK: !!day.D ? toInt(day.DK) : 0
+});
+
+const isCheckoutDate = (dateStr) => document.getElementById('gOut').value === dateStr;
+const isMealLocked   = (dateStr, type) => {
+    if (!isCheckoutDate(dateStr)) return false;
+    return !checkoutLimits[normalizeOutTime(document.getElementById('gOutTime').value)][type];
+};
+
+const fillCountsForEnabled = (day) => {
+    const base = getCurrentBaseCounts();
+    if (day.B && day.BA===0 && day.BK===0) { day.BA=base.adults; day.BK=base.kids; }
+    if (day.L && day.LA===0 && day.LK===0) { day.LA=base.adults; day.LK=base.kids; }
+    if (day.D && day.DA===0 && day.DK===0) { day.DA=base.adults; day.DK=base.kids; }
+    return day;
+};
+
+const enforceCheckoutLimit = (day) => {
+    let r = sanitizeDay(day);
+    if (isCheckoutDate(r.date)) {
+        const limit = checkoutLimits[normalizeOutTime(document.getElementById('gOutTime').value)];
+        if (!limit.B) { r.B=false; r.BA=0; r.BK=0; }
+        if (!limit.L) { r.L=false; r.LA=0; r.LK=0; }
+        if (!limit.D) { r.D=false; r.DA=0; r.DK=0; }
+    }
+    return sanitizeDay(r);
+};
+
+const getTemplateForPlan = (plan) => cloneState(mealTemplates[plan]||mealTemplates.B);
+
+const buildDefaultDay = (dateStr) => {
+    const plan = document.getElementById('gMealPlan').value;
+    const tpl  = getTemplateForPlan(plan);
+    const base = getCurrentBaseCounts();
+    return enforceCheckoutLimit(makeDayObject(
+        dateStr,
+        tpl.B,tpl.L,tpl.D,
+        tpl.B?base.adults:0, tpl.B?base.kids:0,
+        tpl.L?base.adults:0, tpl.L?base.kids:0,
+        tpl.D?base.adults:0, tpl.D?base.kids:0
+    ));
+};
+
+const normalizeCalendarDay = (day, guestAdults=0, guestKids=0) => {
+    const bA = toInt(guestAdults), bK = toInt(guestKids);
+    if ('BA' in day||'BK' in day||'LA' in day||'LK' in day||'DA' in day||'DK' in day) {
+        return sanitizeDay({ date:day.date, B:!!day.B, L:!!day.L, D:!!day.D,
+            BA:day.BA, BK:day.BK, LA:day.LA, LK:day.LK, DA:day.DA, DK:day.DK });
+    }
+    const B=!!day.B, L=!!day.L, D=!!day.D;
+    return sanitizeDay({ date:day.date, B,L,D,
+        BA:B?bA:0, BK:B?bK:0, LA:L?bA:0, LK:L?bK:0, DA:D?bA:0, DK:D?bK:0 });
+};
+
+const describeDayWithCounts = (day) => {
+    if (!day) return 'Без питания';
+    const p=[];
+    if (day.B) p.push(`З ${day.BA}в+${day.BK}д`);
+    if (day.L) p.push(`О ${day.LA}в+${day.LK}д`);
+    if (day.D) p.push(`У ${day.DA}в+${day.DK}д`);
+    return p.length ? p.join(' | ') : 'Без питания';
+};
+
+const getMealSummaryForDay = (guest, dateStr) => {
+    const fA = toInt(guest?.adults), fK = toInt(guest?.kids);
+    const raw = guest?.calendar?.find(c => c.date===dateStr);
+    const day = raw ? normalizeCalendarDay(raw, fA, fK) : null;
+    if (!day) return { short:'—', full:'Нет питания', portions:`${fA}в + ${fK}д` };
+
+    const shortParts=[], fullParts=[];
+    if (day.B) { shortParts.push(`З ${day.BA}в+${day.BK}д`); fullParts.push(`Завтрак ${day.BA}в + ${day.BK}д`); }
+    if (day.L) { shortParts.push(`О ${day.LA}в+${day.LK}д`); fullParts.push(`Обед ${day.LA}в + ${day.LK}д`);   }
+    if (day.D) { shortParts.push(`У ${day.DA}в+${day.DK}д`); fullParts.push(`Ужин ${day.DA}в + ${day.DK}д`);   }
+
+    return {
+        short:   shortParts.length ? shortParts.join(' | ') : 'Нет питания',
+        full:    fullParts.length  ? fullParts.join(', ')   : 'Нет питания',
+        portions:`${fA}в + ${fK}д`
+    };
+};
+
+const buildGuestDiff = (oldGuest, newGuest) => {
+    if (!oldGuest) return 'Добавлен новый гость';
+    const changes = [];
+    if (`${oldGuest.adults}`!==`${newGuest.adults}` || `${oldGuest.kids}`!==`${newGuest.kids}`)
+        changes.push(`Всего гостей: ${newGuest.adults}в + ${newGuest.kids}д`);
+    if ((oldGuest.out||'')!==(newGuest.out||'') || normalizeOutTime(oldGuest.outTime)!==normalizeOutTime(newGuest.outTime))
+        changes.push(`Выезд: ${shortDate(newGuest.out)} (${outTimeLabel(newGuest.outTime)})`);
+    if ((oldGuest.mealPlan||'B')!==(newGuest.mealPlan||'B'))
+        changes.push(`Тариф: ${mealPlanLabel(newGuest.mealPlan)}`);
+    if ((oldGuest.notes||'')!==(newGuest.notes||''))
+        changes.push('Заметки обновлены');
+
+    const dateSet = new Set([
+        ...(oldGuest.calendar||[]).map(x=>x.date),
+        ...(newGuest.calendar||[]).map(x=>x.date)
+    ]);
+    const dateChanges=[];
+    [...dateSet].sort().forEach(date => {
+        const o = normalizeCalendarDay((oldGuest.calendar||[]).find(x=>x.date===date)||{date}, oldGuest.adults, oldGuest.kids);
+        const n = normalizeCalendarDay((newGuest.calendar||[]).find(x=>x.date===date)||{date}, newGuest.adults, newGuest.kids);
+        if (describeDayWithCounts(o) !== describeDayWithCounts(n))
+            dateChanges.push(`${shortDate(date)}: ${describeDayWithCounts(o)} → ${describeDayWithCounts(n)}`);
+    });
+    if (dateChanges.length) {
+        changes.push(...dateChanges.slice(0,4));
+        if (dateChanges.length>4) changes.push(`и ещё ${dateChanges.length-4} дн.`);
+    }
+    return changes.length ? changes.join(' • ') : 'Данные гостя обновлены';
+};
+
+const searchMatches = (item, query) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return [item.room, item.name, item.out, outTimeLabel(item.outTime), mealPlanLabel(item.mealPlan||'B'), item.status, item.notes||'']
+        .join(' ').toLowerCase().includes(q);
+};
+
+window.showToast = (msg, duration=2500) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+};
+
+// ──────────────────────────────────────────────────────
+// КАСТОМНЫЙ PROMPT — замена window.prompt()
+// Возвращает Promise<string|null>
+// null = пользователь нажал Отмена
+// ──────────────────────────────────────────────────────
+function showPromptModal(title, subtitle = '', defaultValue = '') {
+    return new Promise(resolve => {
+        const modal    = document.getElementById('promptModal');
+        const overlay  = document.getElementById('promptOverlay');
+        const input    = document.getElementById('promptInput');
+        const okBtn    = document.getElementById('promptOk');
+        const cancelBtn= document.getElementById('promptCancel');
+
+        document.getElementById('promptTitle').innerText    = title;
+        document.getElementById('promptSubtitle').innerText = subtitle;
+        input.value = defaultValue;
+
+        modal.style.display   = 'block';
+        overlay.style.display = 'block';
+        // Небольшой timeout чтобы анимация успела запуститься до фокуса
+        setTimeout(() => { input.focus(); input.select(); }, 50);
+
+        const close = (value) => {
+            modal.style.display   = 'none';
+            overlay.style.display = 'none';
+            okBtn    .removeEventListener('click',  onOk);
+            cancelBtn.removeEventListener('click',  onCancel);
+            input    .removeEventListener('keydown', onKey);
+            overlay  .removeEventListener('click',  onCancel);
+            resolve(value);
+        };
+
+        const onOk     = () => close(input.value.trim() || null);
+        const onCancel = () => close(null);
+        const onKey    = (e) => {
+            if (e.key === 'Enter')  onOk();
+            if (e.key === 'Escape') onCancel();
+        };
+
+        okBtn    .addEventListener('click',  onOk);
+        cancelBtn.addEventListener('click',  onCancel);
+        input    .addEventListener('keydown', onKey);
+        overlay  .addEventListener('click',  onCancel);
+    });
+}
+
+// Mobile queue drawer
+function toggleMobileQueue(open) {
+    const sidebar  = document.getElementById('queueSidebar');
+    const backdrop = document.getElementById('queueBackdrop');
+    if (!sidebar) return;
+    if (open) { sidebar.classList.add('open-drawer'); backdrop?.classList.add('active'); }
+    else       { sidebar.classList.remove('open-drawer'); backdrop?.classList.remove('active'); }
+}
+
+document.getElementById('mobileQueueToggleBtn')?.addEventListener('click', () => toggleMobileQueue(true));
+document.getElementById('closeQueueBtn')?.addEventListener('click', () => toggleMobileQueue(false));
+document.getElementById('queueBackdrop')?.addEventListener('click', () => toggleMobileQueue(false));
+
+// ──────────────────────────────────────────────────────
+// ROLE SWITCH
+// ──────────────────────────────────────────────────────
+window.switchRole = (role) => {
+    currentRole = role;
+    document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('role' + role.charAt(0).toUpperCase() + role.slice(1)).classList.add('active');
+
+    const adminHeader = document.getElementById('adminHeader');
+    const adminLayout = document.getElementById('adminLayout');
+    const chefPanel   = document.getElementById('chefPanel');
+    const waiterPanel = document.getElementById('waiterPanel');
+    const statsBar    = document.getElementById('statsBar');
+    const mapHint     = document.getElementById('mapHint');
+
+    adminHeader.style.display = 'none';
+    adminLayout.style.display = 'none';
+    chefPanel.style.display   = 'none';
+    waiterPanel.style.display = 'none';
+    statsBar.style.display    = 'none';
+    mapHint.style.display     = 'none';
+
+    if (role === 'admin') {
+        adminHeader.style.display = 'flex';
+        adminLayout.style.display = 'flex';
+        statsBar.style.display    = 'flex';
+        mapHint.style.display     = 'block';
+    } else if (role === 'chef') {
+        chefPanel.style.display = 'flex';
+        chefPanel.style.flexDirection = 'column';
+        renderChefPanel();
+    } else if (role === 'waiter') {
+        waiterPanel.style.display = 'flex';
+        waiterPanel.style.flexDirection = 'column';
+        statsBar.style.display = 'flex';
+        renderWaiterPanel();
+    }
+};
+
+// ──────────────────────────────────────────────────────
+// CHEF PANEL
+// ──────────────────────────────────────────────────────
+window.renderChefPanel = () => {
+    const today = getTodayStr();
+    const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
+    const guestRows = [];
+
+    allGuests.forEach(g => {
+        if (g.status === 'archived') return;
+        const dayRaw = g.calendar?.find(c => c.date === today);
+        const day = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
+        if (!day) return;
+        if (day.B) { stats.B.a += day.BA; stats.B.k += day.BK; }
+        if (day.L) { stats.L.a += day.LA; stats.L.k += day.LK; }
+        if (day.D) { stats.D.a += day.DA; stats.D.k += day.DK; }
+
+        const meals = [];
+        if (day.B) meals.push(`<span class="val-b">З${day.BA}+${day.BK}</span>`);
+        if (day.L) meals.push(`<span class="val-l">О${day.LA}+${day.LK}</span>`);
+        if (day.D) meals.push(`<span class="val-d">У${day.DA}+${day.DK}</span>`);
+
+        guestRows.push(`
+            <div class="chef-breakdown-row">
+                <span class="label">№${g.room} ${g.name}</span>
+                <div class="values">${meals.join('') || '—'}</div>
+            </div>
+        `);
+    });
+
+    const now = new Date();
+    document.getElementById('chefDate').innerText =
+        now.toLocaleDateString('ru-RU', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    document.getElementById('chefB_total').innerText = stats.B.a + stats.B.k;
+    document.getElementById('chefB_sub').innerText   = `${stats.B.a}в + ${stats.B.k}д`;
+    document.getElementById('chefL_total').innerText = stats.L.a + stats.L.k;
+    document.getElementById('chefL_sub').innerText   = `${stats.L.a}в + ${stats.L.k}д`;
+    document.getElementById('chefD_total').innerText = stats.D.a + stats.D.k;
+    document.getElementById('chefD_sub').innerText   = `${stats.D.a}в + ${stats.D.k}д`;
+
+    document.getElementById('chefBreakdown').innerHTML =
+        guestRows.length ? guestRows.join('') : '<div class="chef-breakdown-row"><span class="label">Нет гостей на сегодня</span></div>';
+
+    const checkouts = allGuests.filter(g => g.status !== 'archived' && g.out === today);
+    document.getElementById('chefCheckouts').innerHTML = checkouts.length
+        ? checkouts.map(g => `
+            <div class="chef-breakdown-row">
+                <span class="label">№${g.room} ${g.name}</span>
+                <span style="color:var(--checkout); font-weight:600;">${outTimeLabel(g.outTime)}</span>
+            </div>`).join('')
+        : '<div class="chef-breakdown-row"><span class="label">Выездов нет</span></div>';
+};
+
+// ──────────────────────────────────────────────────────
+// WAITER PANEL — компактные карточки с таймером
+// ──────────────────────────────────────────────────────
+window.renderWaiterPanel = () => {
+    const selectedWaiter = document.getElementById('waiterSelector').value;
+    const container = document.getElementById('waiterTablesList');
+    container.innerHTML = '';
+
+    if (!selectedWaiter) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Выберите официанта выше</div>';
+        return;
+    }
+
+    const today    = getTodayStr();
+    const myTables = allTables.filter(t => t.waiter === selectedWaiter);
+
+    if (!myTables.length) {
+        container.innerHTML = `<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Нет назначенных столов</div>`;
+        return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'waiter-grid';
+
+    myTables.forEach(t => {
+        const g       = allGuests.find(x => x.id === t.guestId);
+        const summary = getMealSummaryForDay(g, today);
+        const isOut   = g && g.out === today;
+
+        // Таймер: считаем время с момента посадки
+        let timerHtml  = '—';
+        let timerClass = '';
+        if (t.guestId && t.seatedAt && !t.isPending) {
+            const mins  = Math.floor((Date.now() - t.seatedAt) / 60000);
+            const hours = Math.floor(mins / 60);
+            const rem   = mins % 60;
+            timerHtml  = hours > 0 ? `⏱ ${hours}ч ${rem}м` : `⏱ ${mins}м`;
+            timerClass = mins > 120 ? 'overtime' : ''; // красный если >2 часа
+        } else if (t.isPending) {
+            timerHtml = '⏳ ожидание';
+        }
+
+        // Статус карточки
+        let cardClass  = 'wc-free';
+        let badgeClass = 'free';
+        let badgeText  = 'Свободен';
+        if (isOut)          { cardClass='wc-checkout'; badgeClass='checkout'; badgeText='Выезд!'; }
+        else if (t.isPending) { cardClass='wc-pending';  badgeClass='pending';  badgeText='В пути'; }
+        else if (t.guestId)   { cardClass='wc-occupied'; badgeClass='occupied'; badgeText='Занят';  }
+
+        const card = document.createElement('div');
+        card.className = `wtc-card ${cardClass}`;
+        card.innerHTML = `
+            <span class="wtc-badge ${badgeClass}">${badgeText}</span>
+            <div class="wtc-num">${t.number}</div>
+            <div class="wtc-guest">${g ? g.name : '—'}</div>
+            <div class="wtc-meal">${g ? summary.short : ''}</div>
+            <div class="wtc-footer">
+                <div class="wtc-timer ${timerClass}">${timerHtml}</div>
+                <div class="wtc-bill">${g ? `${toInt(g.adults)}в+${toInt(g.kids)}д` : '—'}</div>
+            </div>
+        `;
+        card.addEventListener('click', () => openTableModal(t.id, t));
+        grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+};
+
+// Обновляем таймеры каждую минуту без обращения к Firestore
+setInterval(() => {
+    if (currentRole === 'waiter') renderWaiterPanel();
+}, 60000);
+
+// ──────────────────────────────────────────────────────
+// ARCHIVE AUTO-CLEANUP
+// ──────────────────────────────────────────────────────
+const autoCleanArchive = async () => {
+    const cutoff = Date.now() - WEEK_MS;
+    const toDelete = allGuests.filter(g =>
+        g.status === 'archived' && g.archivedAt && g.archivedAt < cutoff
+    );
+    for (const g of toDelete) await deleteDoc(doc(db, 'guests', g.id));
+    if (toDelete.length) showToast(`🗑️ Авто-очистка: удалено ${toDelete.length} из архива`);
+};
+
+let cleanupRan = false;
+
+// ──────────────────────────────────────────────────────
+// STATS + QUEUE — точечное обновление DOM
+// ──────────────────────────────────────────────────────
+const renderStatsAndQueue = debounce(_renderStatsAndQueue, 80);
+
+function _renderStatsAndQueue() {
+    const today = getTodayStr();
+    const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
+    let checkoutCount = 0;
+
+    const list = document.getElementById('unassignedList');
+
+    // Собираем существующие карточки в Map для точечного обновления
+    const existingCards = new Map(
+        [...list.children].map(el => [el.dataset.gid, el])
+    );
+    const seen = new Set();
+
+    allGuests.forEach(g => {
+        if (g.status === 'archived') return;
+        if (g.out === today) checkoutCount++;
+
+        const dayRaw = g.calendar?.find(c => c.date === today);
+        const day    = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
+        if (day?.B) { stats.B.a+=day.BA; stats.B.k+=day.BK; }
+        if (day?.L) { stats.L.a+=day.LA; stats.L.k+=day.LK; }
+        if (day?.D) { stats.D.a+=day.DA; stats.D.k+=day.DK; }
+
+        if (g.status === 'waiting') {
+            seen.add(g.id);
+            const isOut   = g.out === today;
+            const summary = getMealSummaryForDay(g, today);
+            const hasNote = !!(g.notes && g.notes.trim());
+
+            const newHTML = `
+                <b>№${g.room} ${g.name}</b> (${toInt(g.adults)}+${toInt(g.kids)})
+                <small>🍴 ${summary.full}</small>
+                ${hasNote ? `<div class="note-preview-sm">📝 ${g.notes.trim()}</div>` : ''}
+                ${isOut ? `<div class="checkout-icon" style="margin-top:4px;">❌ ВЫЕЗД (${outTimeLabel(g.outTime)})</div>` : ''}
+                <button class="edit-btn" onclick="openGuestModal('${g.id}')">✏️</button>
+            `;
+
+            let div = existingCards.get(g.id);
+            if (!div) {
+                // Новая карточка — создаём и добавляем
+                div = document.createElement('div');
+                div.dataset.gid = g.id;
+                list.appendChild(div);
+            }
+            div.className = `guest-card ${isOut ? 'checkout-today' : ''}`;
+            div.innerHTML = newHTML;
+        }
+    });
+
+    // Удаляем карточки гостей, которых больше нет в очереди
+    existingCards.forEach((el, id) => {
+        if (!seen.has(id)) el.remove();
+    });
+
+    document.getElementById('countB').innerText        = `${stats.B.a}в + ${stats.B.k}д`;
+    document.getElementById('countL').innerText        = `${stats.L.a}в + ${stats.L.k}д`;
+    document.getElementById('countD').innerText        = `${stats.D.a}в + ${stats.D.k}д`;
+    document.getElementById('countCheckout').innerText = checkoutCount;
+
+    if (currentRole === 'chef')   renderChefPanel();
+    if (currentRole === 'waiter') renderWaiterPanel();
+}
+
+const updatePendingCount = () => {
+    document.getElementById('countPending').innerText = allTables.filter(t => t.isPending).length;
+};
+
+// ──────────────────────────────────────────────────────
+// RENDER TABLES — точечное обновление DOM (главная оптимизация)
+// Вместо canvas.innerHTML = '' — обновляем только изменившиеся столы
+// ──────────────────────────────────────────────────────
+const renderTables = debounce(_renderTables, 60);
+
+// Возвращает CSS-класс статуса стола
+function getTableStatusClass(t) {
+    if (t.status === 'cleaning') return 'tbl-cleaning'; // серый
+    if (!t.guestId)              return 'tbl-free';     // зелёный
+    if (t.isPending)             return 'tbl-booked';   // жёлтый (в пути)
+    return 'tbl-busy';                                   // красный (занят)
+}
+
+function _renderTables() {
+    const canvas = document.getElementById('mapCanvas');
+    const today  = getTodayStr();
+
+    // Набор ID столов текущей зоны
+    const visibleIds = new Set(
+        allTables.filter(t => t.zone === currentZone).map(t => t.id)
+    );
+
+    // Удаляем узлы, которых нет в текущей зоне
+    tableNodeMap.forEach((el, id) => {
+        if (!visibleIds.has(id)) {
+            el.remove();
+            tableNodeMap.delete(id);
+        }
+    });
+
+    // Добавляем новые / обновляем существующие
+    allTables.forEach(t => {
+        if (t.zone !== currentZone) return;
+
+        const g       = allGuests.find(x => x.id === t.guestId);
+        const isOut   = g && g.out === today;
+        const summary = getMealSummaryForDay(g, today);
+        const hasNote = !!(g?.notes && g.notes.trim());
+
+        const statusClass = getTableStatusClass(t);
+
+        const classes = [
+            'table',
+            statusClass,
+            isOut        ? 'checkout-warning' : '',
+            t.isModified ? 'modified'         : ''
+        ].filter(Boolean).join(' ');
+
+        const innerHTML = `
+            ${t.isModified ? '<div class="change-alert">⚡</div>' : ''}
+            ${isOut        ? '<div class="checkout-dot">!</div>'  : ''}
+            <b>${t.number}</b>
+            <div class="guest-name">${t.guestName || 'Свободно'}</div>
+            <div class="portion-line">${g ? summary.portions : ''}</div>
+            <div class="meal-line">${g ? summary.short : ''}</div>
+            ${hasNote  ? '<div class="note-line">📝</div>'                : ''}
+            ${t.waiter ? `<div class="waiter-line">👤 ${t.waiter}</div>` : ''}
+        `;
+
+        // Ключ для сравнения — пересоздаём DOM только если что-то реально изменилось
+        const renderKey = `${classes}|${t.x}|${t.y}|${innerHTML}`;
+
+        let el = tableNodeMap.get(t.id);
+
+        if (!el) {
+            // Новый стол: создаём элемент и вешаем события ОДИН РАЗ
+            el = document.createElement('div');
+
+            // Используем замыкание с поиском свежих данных по id —
+            // это важно чтобы после перемещения данные не были устаревшими
+            el.addEventListener('mousedown', (e) => {
+                const fresh = allTables.find(x => x.id === t.id) || t;
+                handleTableInteraction(e, el, fresh);
+            });
+            el.addEventListener('touchstart', (e) => {
+                const fresh = allTables.find(x => x.id === t.id) || t;
+                handleTableInteraction(e, el, fresh);
+            }, { passive: true });
+
+            canvas.appendChild(el);
+            tableNodeMap.set(t.id, el);
+        }
+
+        // Обновляем только если содержимое изменилось
+        if (el.dataset.renderKey !== renderKey) {
+            el.className     = classes;
+            el.style.cssText = `left:${t.x||50}px; top:${t.y||50}px`;
+            el.innerHTML     = innerHTML;
+            el.dataset.renderKey = renderKey;
+        }
+    });
+}
+
+// ──────────────────────────────────────────────────────
+// FIREBASE LISTENERS
+// ──────────────────────────────────────────────────────
+onSnapshot(collection(db, 'guests'), (sn) => {
+    allGuests = [];
+    sn.forEach(d => {
+        const g = { id: d.id, ...d.data() };
+        g.outTime  = normalizeOutTime(g.outTime);
+        g.calendar = (g.calendar||[]).map(day => normalizeCalendarDay(day, g.adults, g.kids));
+        allGuests.push(g);
+    });
+    renderStatsAndQueue();
+    renderTables();
+    if (currentListMode) renderCurrentList();
+    if (!cleanupRan) { cleanupRan = true; autoCleanArchive(); }
+}, (err) => { console.error('Firestore guests error:', err); showToast('❌ Ошибка БД: ' + err.message); });
+
+onSnapshot(collection(db, 'tables'), (sn) => {
+    allTables = [];
+    sn.forEach(d => allTables.push({ id: d.id, ...d.data() }));
+    updatePendingCount();
+    renderTables();
+    if (currentRole === 'waiter') renderWaiterPanel();
+}, (err) => { console.error('Firestore tables error:', err); showToast('❌ Ошибка БД столов: ' + err.message); });
+
+// ──────────────────────────────────────────────────────
+// CALENDAR
+// ──────────────────────────────────────────────────────
+window.generateCalendar = (preserveExisting=true) => {
+    const outDate = parseLocalDate(document.getElementById('gOut').value);
+    if (!outDate) { guestCalendar=[]; selectedDayIndex=null; renderCalendarUI(); renderSelectedDayEditor(); return; }
+
+    const start = parseLocalDate(getTodayStr());
+    const next  = [];
+
+    for (let d=new Date(start); d<=outDate; d.setDate(d.getDate()+1)) {
+        const dateStr  = formatDateLocal(d);
+        const existing = preserveExisting ? guestCalendar.find(c => c.date===dateStr) : null;
+        const day      = existing
+            ? enforceCheckoutLimit(normalizeCalendarDay(existing, document.getElementById('gAdults').value, document.getElementById('gKids').value))
+            : buildDefaultDay(dateStr);
+        next.push(day);
+    }
+
+    guestCalendar = next;
+    if (guestCalendar.length) { if (selectedDayIndex===null||selectedDayIndex>=guestCalendar.length) selectedDayIndex=0; }
+    else selectedDayIndex=null;
+
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+function renderCalendarUI() {
+    const cont = document.getElementById('calendarContainer');
+    const frag = document.createDocumentFragment();
+    cont.innerHTML = '';
+
+    guestCalendar.forEach((day, idx) => {
+        const box = document.createElement('div');
+        box.className = `day-box ${idx===selectedDayIndex?'active':''}`;
+        box.onclick   = () => selectDay(idx);
+        box.innerHTML = `
+            <b>${shortDate(day.date)}</b><br>
+            <div class="meal-mini-tag ${day.B?'on':''} ${isMealLocked(day.date,'B')?'locked':''}" onclick="toggleMeal(${idx},'B',event)">З</div>
+            <div class="meal-mini-tag ${day.L?'on':''} ${isMealLocked(day.date,'L')?'locked':''}" onclick="toggleMeal(${idx},'L',event)">О</div>
+            <div class="meal-mini-tag ${day.D?'on':''} ${isMealLocked(day.date,'D')?'locked':''}" onclick="toggleMeal(${idx},'D',event)">У</div>
+            <div style="margin-top:3px;color:var(--text-dim);font-size:9px;">${describeDayWithCounts(day)}</div>
+        `;
+        frag.appendChild(box);
+    });
+    cont.appendChild(frag);
+}
+
+function renderSelectedDayEditor() {
+    const editor = document.getElementById('dayEditor');
+    if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) { editor.style.display='none'; return; }
+
+    const day = guestCalendar[selectedDayIndex];
+    editor.style.display = 'block';
+    document.getElementById('selectedDayTitle').innerText = `Дата: ${shortDate(day.date)}`;
+
+    let text = `Сейчас: ${describeDayWithCounts(day)}`;
+    if (isCheckoutDate(day.date)) text += ` • выезд ${outTimeLabel(document.getElementById('gOutTime').value)}`;
+    document.getElementById('selectedDayInfo').innerText = text;
+
+    document.getElementById('btnMealB').className = day.B?'':'off';
+    document.getElementById('btnMealL').className = day.L?'':'off';
+    document.getElementById('btnMealD').className = day.D?'':'off';
+
+    document.getElementById('dayBA').value = day.BA;
+    document.getElementById('dayBK').value = day.BK;
+    document.getElementById('dayLA').value = day.LA;
+    document.getElementById('dayLK').value = day.LK;
+    document.getElementById('dayDA').value = day.DA;
+    document.getElementById('dayDK').value = day.DK;
+
+    document.getElementById('dayBA').disabled = !day.B||isMealLocked(day.date,'B');
+    document.getElementById('dayBK').disabled = !day.B||isMealLocked(day.date,'B');
+    document.getElementById('dayLA').disabled = !day.L||isMealLocked(day.date,'L');
+    document.getElementById('dayLK').disabled = !day.L||isMealLocked(day.date,'L');
+    document.getElementById('dayDA').disabled = !day.D||isMealLocked(day.date,'D');
+    document.getElementById('dayDK').disabled = !day.D||isMealLocked(day.date,'D');
+    document.getElementById('btnMealB').disabled = isMealLocked(day.date,'B');
+    document.getElementById('btnMealL').disabled = isMealLocked(day.date,'L');
+    document.getElementById('btnMealD').disabled = isMealLocked(day.date,'D');
+}
+
+window.selectDay = (idx) => { selectedDayIndex=idx; renderCalendarUI(); renderSelectedDayEditor(); };
+window.toggleMeal = (idx, type, e) => { e.stopPropagation(); selectedDayIndex=idx; setMealEnabledInSelectedDay(type); };
+
+window.setMealEnabledInSelectedDay = (type) => {
+    if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+    const day = {...guestCalendar[selectedDayIndex]};
+    if (isMealLocked(day.date, type)) return;
+    if (type==='B') { day.B=!day.B; if(!day.B){day.BA=0;day.BK=0;} }
+    if (type==='L') { day.L=!day.L; if(!day.L){day.LA=0;day.LK=0;} }
+    if (type==='D') { day.D=!day.D; if(!day.D){day.DA=0;day.DK=0;} }
+    guestCalendar[selectedDayIndex] = enforceCheckoutLimit(fillCountsForEnabled(day));
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+window.updateSelectedMealCount = (meal, kind, value) => {
+    if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+    const day = {...guestCalendar[selectedDayIndex]};
+    const num = toInt(value);
+    if (meal==='B') { day.B=true; if(kind==='A') day.BA=num; else day.BK=num; }
+    if (meal==='L') { day.L=true; if(kind==='A') day.LA=num; else day.LK=num; }
+    if (meal==='D') { day.D=true; if(kind==='A') day.DA=num; else day.DK=num; }
+    guestCalendar[selectedDayIndex] = enforceCheckoutLimit(day);
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+window.setSelectedDayPlan = (mode) => {
+    if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+    const base = getCurrentBaseCounts();
+    const tpl  = getTemplateForPlan(mode);
+    guestCalendar[selectedDayIndex] = enforceCheckoutLimit(makeDayObject(
+        guestCalendar[selectedDayIndex].date,
+        tpl.B,tpl.L,tpl.D,
+        tpl.B?base.adults:0, tpl.B?base.kids:0,
+        tpl.L?base.adults:0, tpl.L?base.kids:0,
+        tpl.D?base.adults:0, tpl.D?base.kids:0
+    ));
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+window.clearSelectedDayMeals = () => {
+    if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+    guestCalendar[selectedDayIndex] = sanitizeDay(makeDayObject(guestCalendar[selectedDayIndex].date,false,false,false,0,0,0,0,0,0));
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+window.bulkMeal = (mode) => {
+    const base = getCurrentBaseCounts();
+    guestCalendar = guestCalendar.map(day => {
+        const n = {...day};
+        if (mode==='L') { n.L=true; n.LA=base.adults; n.LK=base.kids; }
+        if (mode==='full') {
+            n.B=true;n.L=true;n.D=true;
+            n.BA=base.adults;n.BK=base.kids;
+            n.LA=base.adults;n.LK=base.kids;
+            n.DA=base.adults;n.DK=base.kids;
+        }
+        return enforceCheckoutLimit(n);
+    });
+    renderCalendarUI();
+    renderSelectedDayEditor();
+};
+
+// ──────────────────────────────────────────────────────
+// SAVE GUEST
+// ──────────────────────────────────────────────────────
+window.saveGuest = async () => {
+    const room    = document.getElementById('gRoom').value.trim();
+    const name    = document.getElementById('gName').value.trim();
+    const adults  = document.getElementById('gAdults').value || '0';
+    const kids    = document.getElementById('gKids').value   || '0';
+    const out     = document.getElementById('gOut').value;
+    const outTime = normalizeOutTime(document.getElementById('gOutTime').value);
+    const mealPlan= document.getElementById('gMealPlan').value;
+    const notes   = document.getElementById('gNotes').value.trim();
+
+    if (!room||!name||!out) { alert('Заполни комнату, имя и дату выезда.'); return; }
+    if (!guestCalendar.length) generateCalendar(true);
+
+    const normalizedCalendar = guestCalendar.map(day => enforceCheckoutLimit(normalizeCalendarDay(day, adults, kids)));
+    const data = { room, name, adults, kids, out, outTime, mealPlan, notes, calendar: normalizedCalendar, updatedAt: Date.now() };
+
+    try {
+        if (editingGuestId) {
+            const oldGuest = allGuests.find(x => x.id===editingGuestId);
+            const diffText = buildGuestDiff(oldGuest, data);
+            await updateDoc(doc(db,'guests',editingGuestId), data);
+            const relatedTables = allTables.filter(t => t.guestId===editingGuestId);
+            for (const t of relatedTables) {
+                await updateDoc(doc(db,'tables',t.id), {
+                    isModified: true, modificationText: diffText,
+                    modifiedAt: Date.now(), guestName: name
+                });
+            }
+            showToast('✅ Данные гостя обновлены');
+        } else {
+            await addDoc(collection(db,'guests'), { ...data, status:'waiting' });
+            showToast('✅ Гость добавлен в очередь');
+        }
+        closeModal('guestModal');
+    } catch(err) {
+        console.error('saveGuest error:', err);
+        alert('❌ Ошибка сохранения: ' + err.message);
+    }
+};
+
+// ──────────────────────────────────────────────────────
+// TABLE MODAL
+// ──────────────────────────────────────────────────────
+window.openTableModal = async (id, data) => {
+    selectedTableId = id;
+    document.getElementById('tTitle').innerText = 'Стол №' + data.number;
+    const today = getTodayStr();
+
+    if (data.guestId) {
+        const g       = allGuests.find(x => x.id===data.guestId);
+        const summary = getMealSummaryForDay(g, today);
+        document.getElementById('assignForm').style.display = 'none';
+        document.getElementById('occForm').style.display    = 'block';
+        document.getElementById('arrBtn').style.display     = data.isPending ? 'block' : 'none';
+
+        document.getElementById('occData').innerHTML = `
+            <b>${g?.name||'Гость'} (№${g?.room||'-'})</b><br>
+            👥 Гости: ${toInt(g?.adults)}в + ${toInt(g?.kids)}д<br>
+            🍴 СЕГОДНЯ: <span>${summary.full}</span><br>
+            📅 Выезд: ${g?.out||'-'} (${outTimeLabel(g?.outTime)})
+        `;
+
+        const notesBox = document.getElementById('occNotes');
+        if (g?.notes && g.notes.trim()) {
+            notesBox.style.display = 'block';
+            notesBox.textContent   = '📝 ' + g.notes.trim();
+        } else {
+            notesBox.style.display = 'none';
+        }
+
+        if (data.isModified) {
+            document.getElementById('mealAlert').style.display = 'block';
+            document.getElementById('mDiff').innerText         = data.modificationText||'Питание обновлено';
+            await updateDoc(doc(db,'tables',id), { isModified: false, modificationText:'' });
+        } else {
+            document.getElementById('mealAlert').style.display = 'none';
+        }
+    } else {
+        document.getElementById('assignForm').style.display = 'block';
+        document.getElementById('occForm').style.display    = 'none';
+        document.getElementById('mealAlert').style.display  = 'none';
+        const sel = document.getElementById('selGuest');
+        sel.innerHTML = '<option value="">Кто садится?</option>';
+        allGuests.filter(x => x.status==='waiting').forEach(x => {
+            const s = getMealSummaryForDay(x, today);
+            sel.innerHTML += `<option value="${x.id}">№${x.room} - ${x.name} (${s.short})</option>`;
+        });
+    }
+
+    document.getElementById('tblWaiterSel').value = data.waiter || '';
+    showModal('tableModal', true);
+};
+
+window.saveWaiter = async () => {
+    if (!selectedTableId) return;
+    const waiter = document.getElementById('tblWaiterSel').value;
+    try {
+        await updateDoc(doc(db,'tables',selectedTableId), { waiter: waiter || null });
+        showToast(waiter ? `👔 Официант ${waiter} назначен` : '👔 Официант снят');
+        closeAllModals();
+    } catch(err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+window.deleteCurrentTable = async () => {
+    if (!selectedTableId) return;
+    const t = allTables.find(x => x.id===selectedTableId);
+    if (!confirm(`Удалить стол №${t?.number||'?'} навсегда?`)) return;
+    try {
+        await deleteDoc(doc(db,'tables',selectedTableId));
+        // Удаляем узел из карты DOM
+        const el = tableNodeMap.get(selectedTableId);
+        if (el) { el.remove(); tableNodeMap.delete(selectedTableId); }
+        closeAllModals();
+        showToast('🗑️ Стол удалён');
+    } catch(err) { alert('❌ Ошибка удаления: ' + err.message); }
+};
+
+window.assignToTable = async () => {
+    const gid = document.getElementById('selGuest').value;
+    if (!gid) return;
+    const g = allGuests.find(x => x.id===gid);
+    try {
+        await updateDoc(doc(db,'guests',gid), { status:'seated' });
+        await updateDoc(doc(db,'tables',selectedTableId), {
+            guestId: gid,
+            guestName: g.name,
+            isPending: true,
+            isModified: false,
+            modificationText: '',
+            seatedAt: Date.now() // ← для таймера в панели официанта
+        });
+        closeAllModals();
+        showToast(`🪑 ${g.name} посажен(а) за стол`);
+    } catch(err) { alert('❌ Ошибка посадки: ' + err.message); }
+};
+
+window.confirmArrival = async () => {
+    await updateDoc(doc(db,'tables',selectedTableId), { isPending: false });
+    closeAllModals();
+    showToast('✅ Прибытие подтверждено');
+};
+
+window.freeTable = async () => {
+    const t = allTables.find(x => x.id===selectedTableId);
+    if (!t?.guestId) return;
+    try {
+        await updateDoc(doc(db,'guests',t.guestId), { status:'archived', archivedAt: Date.now() });
+        await updateDoc(doc(db,'tables',selectedTableId), {
+            guestId: null,
+            guestName: null,
+            isPending: false,
+            isModified: false,
+            modificationText: '',
+            seatedAt: null // ← сбрасываем таймер
+        });
+        closeAllModals();
+        showToast('🗃️ Гость перемещён в архив');
+    } catch(err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+// ──────────────────────────────────────────────────────
+// LISTS
+// ──────────────────────────────────────────────────────
+const openList = (title, mode, items, withSearch=false) => {
+    currentListMode  = mode;
+    currentListItems = items;
+    document.getElementById('listTitle').innerText           = title;
+    document.getElementById('archiveClearRow').style.display = mode==='archive' ? 'block' : 'none';
+    const search = document.getElementById('listSearch');
+    search.style.display = withSearch ? 'block' : 'none';
+    if (!withSearch) search.value = '';
+    renderCurrentList();
+    showModal('listModal', true);
+};
+
+window.renderCurrentList = () => {
+    const cont  = document.getElementById('listContent');
+    const search= document.getElementById('listSearch');
+    const query = search.style.display==='none' ? '' : search.value.trim().toLowerCase();
+    const frag  = document.createDocumentFragment();
+    cont.innerHTML = '';
+
+    let items = currentListItems;
+    if (query) items = items.filter(item => searchMatches(item, query));
+    if (!items.length) { cont.innerHTML='<div class="list-item">Ничего не найдено</div>'; return; }
+
+    items.forEach(g => {
+        const todaySummary = getMealSummaryForDay(g, getTodayStr());
+        const item = document.createElement('div');
+        item.className = 'list-item';
+
+        if (currentListMode==='archive') {
+            const ageMs    = Date.now() - (g.archivedAt||0);
+            const daysLeft = Math.max(0, 7 - Math.floor(ageMs / 86400000));
+            item.innerHTML = `
+                <span>
+                    №${g.room} ${g.name}<br>
+                    <span class="muted">Архив • Выезд: ${shortDate(g.out)} (${outTimeLabel(g.outTime)})
+                    ${g.archivedAt ? `• удалится через ${daysLeft}д` : ''}</span>
+                </span>
+                <button class="q-btn">👁</button>
+            `;
+            item.onclick = () => openArchiveDetails(g.id);
+
+        } else if (currentListMode==='all') {
+            const isOut = g.out===getTodayStr();
+            item.innerHTML = `
+                <span>
+                    №${g.room} ${g.name} ${isOut?'<span style="color:var(--danger)">📤</span>':''}<br>
+                    <span class="muted">${mealPlanLabel(g.mealPlan||'B')} • ${todaySummary.short}</span>
+                    ${g.notes ? `<div class="note-preview-sm" style="margin-top:4px">${g.notes.substring(0,60)}</div>` : ''}
+                </span>
+                <button class="q-btn">✏️</button>
+            `;
+            item.onclick = () => openGuestModal(g.id);
+
+        } else if (currentListMode==='checkouts') {
+            item.innerHTML = `
+                <div class="checkout-list-item" style="width:100%">
+                    <b>№${g.room} — ${g.name}</b> (${toInt(g.adults)}в + ${toInt(g.kids)}д)<br>
+                    Выезд: <b>${outTimeLabel(g.outTime)}</b><br>
+                    <span class="muted">${todaySummary.full}</span>
+                    ${g.notes ? `<div class="note-preview-sm" style="margin-top:4px">${g.notes}</div>` : ''}
+                </div>
+            `;
+            item.onclick = () => openGuestModal(g.id);
+        } else {
+            item.innerHTML = `<span>${g.name}</span>`;
+        }
+        frag.appendChild(item);
+    });
+    cont.appendChild(frag);
+};
+
+window.showAllGuests = () => {
+    const items = allGuests.filter(g => g.status!=='archived').sort((a,b) => (a.room||'').localeCompare(b.room||''));
+    openList('📋 Все гости', 'all', items, true);
+};
+
+window.showPendingGuests = () => {
+    const cont = document.getElementById('listContent');
+    document.getElementById('listTitle').innerText = '🚶 В пути';
+    document.getElementById('listSearch').style.display = 'none';
+    document.getElementById('archiveClearRow').style.display = 'none';
+    cont.innerHTML = '';
+    allTables.filter(t => t.isPending).forEach(t => {
+        cont.innerHTML += `<div class="list-item"><span>Стол ${t.number} (${t.zone}) — ${t.guestName}</span></div>`;
+    });
+    if (!cont.innerHTML) cont.innerHTML='<div class="list-item">Никого нет</div>';
+    showModal('listModal', true);
+};
+
+window.showArchive = () => {
+    const items = allGuests.filter(g => g.status==='archived').sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0));
+    openList('📜 Архив', 'archive', items, true);
+};
+
+window.showCheckoutsToday = () => {
+    const today = getTodayStr();
+    const items = allGuests
+        .filter(g => g.status!=='archived' && g.out===today)
+        .sort((a,b) => {
+            const order = {B:0,L:1,D:2};
+            return (order[normalizeOutTime(a.outTime)]||0)-(order[normalizeOutTime(b.outTime)]||0);
+        });
+    openList(`🚪 Выезды сегодня (${items.length})`, 'checkouts', items, false);
+};
+
+// ──────────────────────────────────────────────────────
+// ARCHIVE DETAIL
+// ──────────────────────────────────────────────────────
+window.openArchiveDetails = (id) => {
+    const g = allGuests.find(x => x.id===id);
+    if (!g) return;
+
+    const calendar = (g.calendar||[]).slice().sort((a,b) => a.date.localeCompare(b.date));
+    let html = `
+        <div style="font-size:13px;line-height:1.8;color:var(--text-muted);">
+        <div><b style="color:var(--text)">Комната:</b> ${g.room}</div>
+        <div><b style="color:var(--text)">Имя:</b> ${g.name}</div>
+        <div><b style="color:var(--text)">Гости:</b> ${toInt(g.adults)}в + ${toInt(g.kids)}д</div>
+        <div><b style="color:var(--text)">Тип питания:</b> ${mealPlanLabel(g.mealPlan||'B')}</div>
+        <div><b style="color:var(--text)">Выезд:</b> ${g.out} (${outTimeLabel(g.outTime)})</div>
+        ${g.notes ? `<div style="margin-top:8px"><b style="color:var(--text)">Заметки:</b></div><div class="note-preview">${g.notes}</div>` : ''}
+        </div>
+        <div style="margin-top:12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Питание по датам</div>
+    `;
+
+    if (!calendar.length) html += '<div class="archive-day-line">Нет данных</div>';
+    else calendar.forEach(day => {
+        const n = normalizeCalendarDay(day, g.adults, g.kids);
+        html += `<div class="archive-day-line"><b>${shortDate(n.date)}</b> — ${describeDayWithCounts(n)}</div>`;
+    });
+
+    html += `
+        <button class="btn btn-success" onclick="restoreGuestFromArchive('${g.id}')">♻️ Восстановить из архива</button>
+        <button class="btn btn-danger" style="margin-top:8px" onclick="deleteGuestPermanently('${g.id}')">🗑️ Удалить навсегда</button>
+    `;
+    document.getElementById('archiveDetailContent').innerHTML = html;
+    showModal('archiveDetailModal', true);
+};
+
+window.restoreGuestFromArchive = async (id) => {
+    await updateDoc(doc(db,'guests',id), { status:'waiting', archivedAt: null });
+    closeModal('archiveDetailModal');
+    showToast('♻️ Гость восстановлен в очередь');
+};
+
+window.deleteGuestPermanently = async (id) => {
+    if (!confirm('Удалить запись навсегда? Это действие необратимо.')) return;
+    await deleteDoc(doc(db,'guests',id));
+    closeModal('archiveDetailModal');
+    showToast('🗑️ Запись удалена');
+};
+
+window.confirmClearArchive = async () => {
+    const archived = allGuests.filter(g => g.status==='archived');
+    if (!archived.length) { showToast('Архив уже пуст'); return; }
+    if (!confirm(`Удалить все ${archived.length} записей из архива?`)) return;
+    for (const g of archived) await deleteDoc(doc(db,'guests',g.id));
+    closeAllModals();
+    showToast(`🗑️ Архив очищен (${archived.length} записей)`);
+};
+
+// ──────────────────────────────────────────────────────
+// ZONE SWITCH
+// ──────────────────────────────────────────────────────
+window.switchZone = (z, e) => {
+    currentZone = z;
+    document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    // При смене зоны очищаем карту узлов — они относятся к прошлой зоне
+    tableNodeMap.forEach(el => el.remove());
+    tableNodeMap.clear();
+    renderTables();
+};
+
+// ──────────────────────────────────────────────────────
+// GUEST MODAL OPEN
+// ──────────────────────────────────────────────────────
+window.openGuestModal = (id=null) => {
+    editingGuestId   = id;
+    selectedDayIndex = null;
+
+    if (id) {
+        const g = allGuests.find(x => x.id===id);
+        document.getElementById('gRoom').value     = g.room    || '';
+        document.getElementById('gName').value     = g.name    || '';
+        document.getElementById('gAdults').value   = g.adults  || '1';
+        document.getElementById('gKids').value     = g.kids    || '0';
+        document.getElementById('gOut').value      = g.out     || '';
+        document.getElementById('gOutTime').value  = normalizeOutTime(g.outTime);
+        document.getElementById('gMealPlan').value = g.mealPlan|| 'B';
+        document.getElementById('gNotes').value    = g.notes   || '';
+        guestCalendar = (g.calendar||[]).map(day => normalizeCalendarDay(day,g.adults,g.kids)).sort((a,b) => a.date.localeCompare(b.date));
+        if (guestCalendar.length) selectedDayIndex=0;
+        generateCalendar(true);
+    } else {
+        document.getElementById('gRoom').value     = '';
+        document.getElementById('gName').value     = '';
+        document.getElementById('gAdults').value   = '1';
+        document.getElementById('gKids').value     = '0';
+        document.getElementById('gOut').value      = '';
+        document.getElementById('gOutTime').value  = 'B';
+        document.getElementById('gMealPlan').value = 'B';
+        document.getElementById('gNotes').value    = '';
+        guestCalendar = [];
+        document.getElementById('calendarContainer').innerHTML = '';
+        renderSelectedDayEditor();
+    }
+
+    showModal('guestModal', true);
+};
+
+// ──────────────────────────────────────────────────────
+// ADD TABLE — использует кастомный prompt вместо браузерного
+// ──────────────────────────────────────────────────────
+window.addNewTable = async () => {
+    const zoneName = currentZone==='main' ? 'Зал' : currentZone==='big_terrace' ? 'Б. Терраса' : 'М. Терраса';
+    const n = await showPromptModal(
+        'Добавить стол',
+        `Введите номер нового стола (${zoneName})`
+    );
+    if (!n) return; // отмена
+
+    const area = document.getElementById('mapArea');
+    try {
+        await addDoc(collection(db,'tables'), {
+            number: n,
+            zone: currentZone,
+            x: 60 + area.scrollLeft,
+            y: 60 + area.scrollTop,
+            isPending: false,
+            isModified: false,
+            modificationText: '',
+            waiter: null,
+            seatedAt: null
+        });
+        showToast(`✅ Стол №${n} добавлен`);
+    } catch(err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+// ──────────────────────────────────────────────────────
+// DRAG & INTERACTION
+// ──────────────────────────────────────────────────────
+function handleTableInteraction(e, el, data) {
+    if (e.type === 'mousedown') e.preventDefault();
+
+    const startX = e.clientX ?? e.touches?.[0].clientX ?? 0;
+    const startY = e.clientY ?? e.touches?.[0].clientY ?? 0;
+    const rect   = el.getBoundingClientRect();
+    const offsetX = startX - rect.left;
+    const offsetY = startY - rect.top;
+
+    let holdTimer   = null;
+    let isDragging  = false;
+    let movedEnough = false;
+
+    holdTimer = setTimeout(() => {
+        isDragging = true;
+        el.classList.add('hold-active');
+        document.getElementById('mapArea').classList.add('dragging-table');
+        if (navigator.vibrate) navigator.vibrate(40);
+    }, 400);
+
+    const onMove = (m) => {
+        const cx = m.clientX ?? m.touches?.[0].clientX ?? 0;
+        const cy = m.clientY ?? m.touches?.[0].clientY ?? 0;
+        const dx = Math.abs(cx - startX);
+        const dy = Math.abs(cy - startY);
+
+        if (!isDragging && (dx > 12 || dy > 12)) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+            return;
+        }
+
+        if (!isDragging) return;
+        if (m.cancelable) m.preventDefault();
+        movedEnough = true;
+
+        const area     = document.getElementById('mapArea');
+        const canvas   = document.getElementById('mapCanvas');
+        const areaRect = area.getBoundingClientRect();
+
+        const newX = cx - areaRect.left - offsetX + area.scrollLeft;
+        const newY = cy - areaRect.top  - offsetY + area.scrollTop;
+
+        el.style.left = Math.max(0, Math.min(newX, canvas.offsetWidth  - el.offsetWidth))  + 'px';
+        el.style.top  = Math.max(0, Math.min(newY, canvas.offsetHeight - el.offsetHeight)) + 'px';
+    };
+
+    const onEnd = async () => {
+        clearTimeout(holdTimer);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onEnd);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend',  onEnd);
+
+        el.classList.remove('hold-active');
+        document.getElementById('mapArea').classList.remove('dragging-table');
+
+        if (isDragging && movedEnough) {
+            try {
+                await updateDoc(doc(db,'tables',data.id), {
+                    x: parseInt(el.style.left),
+                    y: parseInt(el.style.top)
+                });
+            } catch(err) { console.error('Позиция не сохранена:', err); }
+        } else if (!isDragging) {
+            openTableModal(data.id, data);
+        }
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend',  onEnd);
+}
+
+// MAP PAN (mouse)
+const mapArea = document.getElementById('mapArea');
+let isPanning = false, panStartX, panStartY, panScrollL, panScrollT;
+
+mapArea.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.table')) return;
+    isPanning  = true;
+    panStartX  = e.clientX;
+    panStartY  = e.clientY;
+    panScrollL = mapArea.scrollLeft;
+    panScrollT = mapArea.scrollTop;
+    mapArea.style.cursor = 'grabbing';
+});
+
+mapArea.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    mapArea.scrollLeft = panScrollL - (e.clientX - panStartX);
+    mapArea.scrollTop  = panScrollT - (e.clientY - panStartY);
+});
+
+const stopPan = () => { isPanning = false; mapArea.style.cursor = 'grab'; };
+mapArea.addEventListener('mouseup',    stopPan);
+mapArea.addEventListener('mouseleave', stopPan);
+
+// ──────────────────────────────────────────────────────
+// MODALS
+// ──────────────────────────────────────────────────────
+function showModal(id, s) {
+    document.getElementById(id).style.display      = s ? 'block' : 'none';
+    document.getElementById('overlay').style.display = s ? 'block' : 'none';
+}
+
+window.closeModal = (id) => {
+    document.getElementById(id).style.display = 'none';
+    if (id==='guestModal') { editingGuestId=null; selectedDayIndex=null; }
+    if (![...document.querySelectorAll('.modal')].some(m => m.style.display==='block'))
+        document.getElementById('overlay').style.display = 'none';
+};
+
+window.closeAllModals = () => {
+    document.querySelectorAll('.modal').forEach(m => m.style.display='none');
+    document.getElementById('overlay').style.display = 'none';
+    selectedDayIndex = null;
+    editingGuestId   = null;
+};
+
+</script>
+</body>
+</html>
