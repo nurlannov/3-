@@ -4,6 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ТРИ КОРОНЫ</title>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- PWA — добавлено поверх оригинала                        -->
+<!-- ════════════════════════════════════════════════════════ -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#C9963A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Три Короны">
+<meta name="application-name" content="Три Короны">
+<meta name="msapplication-TileColor" content="#0D1B2A">
+<meta name="msapplication-TileImage" content="/icons/icon-144.png">
+<meta name="description" content="Система управления столами и гостями отеля «Три Короны»">
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="96x96"   href="/icons/icon-96.png">
+<!-- ════════════════════════════════════════════════════════ -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -347,7 +369,6 @@ body {
   touch-action: none;
   padding: 6px;
   transition: transform 0.15s, box-shadow 0.15s;
-  /* Базовый фон — переопределяется статус-классом */
   background: var(--navy-3);
   border: 2.5px solid var(--navy-4);
   box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
@@ -357,7 +378,6 @@ body {
 
 /* ── СТАТУСЫ СТОЛА: ЦВЕТОВОЕ КОДИРОВАНИЕ ── */
 
-/* СВОБОДЕН — зелёный */
 .table.tbl-free {
   border-color: var(--table-free-color);
   background: var(--table-free-dim);
@@ -365,7 +385,6 @@ body {
 }
 .table.tbl-free b { color: var(--table-free-color); }
 
-/* ЗАНЯТ — красный */
 .table.tbl-busy,
 .table.occupied {
   border-color: var(--table-busy-color);
@@ -375,7 +394,6 @@ body {
 .table.tbl-busy b,
 .table.occupied b { color: var(--table-busy-color); }
 
-/* В ПУТИ / ЗАБРОНИРОВАН — жёлтый с пульсацией */
 .table.tbl-booked,
 .table.pending {
   border-color: var(--table-booked-color);
@@ -391,7 +409,6 @@ body {
   50%       { opacity: 0.65; }
 }
 
-/* УБОРКА / СЧЁТ — серый */
 .table.tbl-cleaning {
   border-color: var(--table-cleaning-color);
   background: var(--table-cleaning-dim);
@@ -399,7 +416,6 @@ body {
 }
 .table.tbl-cleaning b { color: #94A3B8; }
 
-/* Предупреждение выезда — оверрайд рамки */
 .table.checkout-warning {
   border-color: var(--danger) !important;
   box-shadow: 0 0 0 3px rgba(255,90,90,0.3), 0 4px 20px rgba(255,90,90,0.2) !important;
@@ -567,10 +583,8 @@ textarea { resize: vertical; min-height: 60px; }
 .form-block-legend span { font-size: 14px; }
 .form-block-body { padding: 14px; background: rgba(0,0,0,0.10); }
 
-/* Поля внутри form-block: убираем лишний margin-top у первого label */
 .form-block-body .field-label:first-child { margin-top: 0; }
 
-/* Старый form-section — оставляем для совместимости */
 .form-section {
   margin-top: 12px;
   border: 1px solid var(--glass-border);
@@ -925,7 +939,6 @@ textarea { resize: vertical; min-height: 60px; }
 
 .waiter-select-bar label { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; }
 
-/* ── НОВЫЕ: компактные карточки официанта ── */
 .waiter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
@@ -1066,6 +1079,104 @@ textarea { resize: vertical; min-height: 60px; }
 
 .queue-backdrop.active { display: block; }
 
+/* ────────────────────────────────────────────────────────── */
+/* PWA — добавленные стили                                    */
+/* ────────────────────────────────────────────────────────── */
+
+/* ── Баннер установки приложения ── */
+#installBanner {
+  display: none;
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy-2);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  z-index: 8000;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,150,58,0.1);
+  backdrop-filter: blur(12px);
+  max-width: 360px;
+  width: calc(100% - 32px);
+  animation: slide-up 0.35s ease;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+#installBanner .install-icon   { font-size: 22px; flex-shrink: 0; }
+#installBanner .install-text   { flex: 1; }
+#installBanner .install-title  { font-size: 13px; font-weight: 600; color: var(--gold); }
+#installBanner .install-sub    { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+#installBanner .install-accept {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+#installBanner .install-accept:hover { background: var(--gold-light); }
+#installBanner .install-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+#installBanner .install-close:hover { color: var(--text-muted); }
+
+/* ── Кнопка уведомлений в шапке ── */
+#notifBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+#notifBtn:hover  { border-color: var(--gold); color: var(--gold); }
+#notifBtn.active { border-color: var(--success); color: var(--success); background: var(--success-dim); }
+#notifBtn.denied { border-color: var(--danger);  color: var(--danger);  background: var(--danger-dim);  }
+
+/* ── Обновление SW (баннер вверху) ── */
+#swUpdateBanner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--gold);
+  color: var(--navy);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9998;
+  text-align: center;
+  cursor: pointer;
+}
+#swUpdateBanner:hover { background: var(--gold-light); }
+
 /* ─── MOBILE ─── */
 @media (max-width: 768px) {
   .brand-name { display: none; }
@@ -1099,6 +1210,9 @@ textarea { resize: vertical; min-height: 60px; }
   .stat-chip { padding: 4px 8px; font-size: 11px; }
 
   .waiter-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* На мобиле скрываем текст кнопки уведомлений */
+  #notifBtn span { display: none; }
 }
 
 /* ─── SCROLLBAR ─── */
@@ -1107,9 +1221,15 @@ textarea { resize: vertical; min-height: 60px; }
 ::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 3px; }
 
 #archiveClearRow { margin-top: 10px; text-align: center; }
+/* ────────────────────────────────────────────────────────── */
 </style>
 </head>
 <body>
+
+<!-- ── Баннер обновления Service Worker ── -->
+<div id="swUpdateBanner" onclick="applySwUpdate()">
+  🔄 Доступна новая версия приложения — нажмите чтобы обновить
+</div>
 
 <!-- TOP BAR -->
 <div class="top-bar">
@@ -1175,6 +1295,10 @@ textarea { resize: vertical; min-height: 60px; }
     <button class="hbtn" onclick="showArchive()">📜 <span>Архив</span></button>
     <button class="hbtn gold" onclick="addNewTable()">+ <span>Стол</span></button>
     <button class="hbtn success" onclick="openGuestModal()">+ <span>Гость</span></button>
+    <!-- PWA — кнопка уведомлений -->
+    <button class="hbtn" id="notifBtn" onclick="requestPushPermission()" title="Push-уведомления">
+      🔔 <span>Уведомления</span>
+    </button>
   </div>
 </div>
 
@@ -1249,11 +1373,21 @@ textarea { resize: vertical; min-height: 60px; }
 <div id="toast"></div>
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
-<!-- GUEST MODAL — обновлённая структура с секциями -->
+<!-- PWA — Баннер установки -->
+<div id="installBanner">
+  <span class="install-icon">👑</span>
+  <div class="install-text">
+    <div class="install-title">Установить приложение</div>
+    <div class="install-sub">Добавить Три Короны на главный экран</div>
+  </div>
+  <button class="install-accept" onclick="installApp()">Установить</button>
+  <button class="install-close"  onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- GUEST MODAL -->
 <div class="modal" id="guestModal">
   <h3>Данные гостя</h3>
 
-  <!-- СЕКЦИЯ 1: Личные данные -->
   <div class="form-block">
     <div class="form-block-legend"><span>👤</span> Личные данные</div>
     <div class="form-block-body">
@@ -1269,7 +1403,6 @@ textarea { resize: vertical; min-height: 60px; }
     </div>
   </div>
 
-  <!-- СЕКЦИЯ 2: Детали заезда -->
   <div class="form-block">
     <div class="form-block-legend"><span>📅</span> Детали заезда</div>
     <div class="form-block-body">
@@ -1284,7 +1417,6 @@ textarea { resize: vertical; min-height: 60px; }
     </div>
   </div>
 
-  <!-- СЕКЦИЯ 3: Питание и заметки -->
   <div class="form-block">
     <div class="form-block-legend"><span>🍽️</span> Питание и пожелания</div>
     <div class="form-block-body">
@@ -1388,7 +1520,7 @@ textarea { resize: vertical; min-height: 60px; }
   <button class="btn btn-ghost" onclick="closeModal('archiveDetailModal')">Закрыть</button>
 </div>
 
-<!-- КАСТОМНЫЙ PROMPT — замена браузерного prompt() -->
+<!-- CUSTOM PROMPT -->
 <div class="overlay" id="promptOverlay"></div>
 <div class="modal" id="promptModal">
   <h3 id="promptTitle">Введите значение</h3>
@@ -1400,6 +1532,9 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- ОРИГИНАЛЬНЫЙ FIREBASE + БИЗНЕС-ЛОГИКА (без изменений)   -->
+<!-- ════════════════════════════════════════════════════════ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
@@ -1435,8 +1570,6 @@ let currentRole      = 'admin';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-// ── Хранилище DOM-узлов столов (ключ: id стола)
-// Позволяет обновлять только изменившиеся столы без перерисовки всей карты
 const tableNodeMap = new Map();
 
 function debounce(fn, ms) {
@@ -1626,11 +1759,6 @@ window.showToast = (msg, duration=2500) => {
     setTimeout(() => t.classList.remove('show'), duration);
 };
 
-// ──────────────────────────────────────────────────────
-// КАСТОМНЫЙ PROMPT — замена window.prompt()
-// Возвращает Promise<string|null>
-// null = пользователь нажал Отмена
-// ──────────────────────────────────────────────────────
 function showPromptModal(title, subtitle = '', defaultValue = '') {
     return new Promise(resolve => {
         const modal    = document.getElementById('promptModal');
@@ -1645,7 +1773,6 @@ function showPromptModal(title, subtitle = '', defaultValue = '') {
 
         modal.style.display   = 'block';
         overlay.style.display = 'block';
-        // Небольшой timeout чтобы анимация успела запуститься до фокуса
         setTimeout(() => { input.focus(); input.select(); }, 50);
 
         const close = (value) => {
@@ -1672,7 +1799,6 @@ function showPromptModal(title, subtitle = '', defaultValue = '') {
     });
 }
 
-// Mobile queue drawer
 function toggleMobileQueue(open) {
     const sidebar  = document.getElementById('queueSidebar');
     const backdrop = document.getElementById('queueBackdrop');
@@ -1685,9 +1811,6 @@ document.getElementById('mobileQueueToggleBtn')?.addEventListener('click', () =>
 document.getElementById('closeQueueBtn')?.addEventListener('click', () => toggleMobileQueue(false));
 document.getElementById('queueBackdrop')?.addEventListener('click', () => toggleMobileQueue(false));
 
-// ──────────────────────────────────────────────────────
-// ROLE SWITCH
-// ──────────────────────────────────────────────────────
 window.switchRole = (role) => {
     currentRole = role;
     document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
@@ -1724,9 +1847,6 @@ window.switchRole = (role) => {
     }
 };
 
-// ──────────────────────────────────────────────────────
-// CHEF PANEL
-// ──────────────────────────────────────────────────────
 window.renderChefPanel = () => {
     const today = getTodayStr();
     const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
@@ -1778,9 +1898,6 @@ window.renderChefPanel = () => {
         : '<div class="chef-breakdown-row"><span class="label">Выездов нет</span></div>';
 };
 
-// ──────────────────────────────────────────────────────
-// WAITER PANEL — компактные карточки с таймером
-// ──────────────────────────────────────────────────────
 window.renderWaiterPanel = () => {
     const selectedWaiter = document.getElementById('waiterSelector').value;
     const container = document.getElementById('waiterTablesList');
@@ -1807,7 +1924,6 @@ window.renderWaiterPanel = () => {
         const summary = getMealSummaryForDay(g, today);
         const isOut   = g && g.out === today;
 
-        // Таймер: считаем время с момента посадки
         let timerHtml  = '—';
         let timerClass = '';
         if (t.guestId && t.seatedAt && !t.isPending) {
@@ -1815,12 +1931,11 @@ window.renderWaiterPanel = () => {
             const hours = Math.floor(mins / 60);
             const rem   = mins % 60;
             timerHtml  = hours > 0 ? `⏱ ${hours}ч ${rem}м` : `⏱ ${mins}м`;
-            timerClass = mins > 120 ? 'overtime' : ''; // красный если >2 часа
+            timerClass = mins > 120 ? 'overtime' : '';
         } else if (t.isPending) {
             timerHtml = '⏳ ожидание';
         }
 
-        // Статус карточки
         let cardClass  = 'wc-free';
         let badgeClass = 'free';
         let badgeText  = 'Свободен';
@@ -1847,14 +1962,10 @@ window.renderWaiterPanel = () => {
     container.appendChild(grid);
 };
 
-// Обновляем таймеры каждую минуту без обращения к Firestore
 setInterval(() => {
     if (currentRole === 'waiter') renderWaiterPanel();
 }, 60000);
 
-// ──────────────────────────────────────────────────────
-// ARCHIVE AUTO-CLEANUP
-// ──────────────────────────────────────────────────────
 const autoCleanArchive = async () => {
     const cutoff = Date.now() - WEEK_MS;
     const toDelete = allGuests.filter(g =>
@@ -1866,9 +1977,6 @@ const autoCleanArchive = async () => {
 
 let cleanupRan = false;
 
-// ──────────────────────────────────────────────────────
-// STATS + QUEUE — точечное обновление DOM
-// ──────────────────────────────────────────────────────
 const renderStatsAndQueue = debounce(_renderStatsAndQueue, 80);
 
 function _renderStatsAndQueue() {
@@ -1878,7 +1986,6 @@ function _renderStatsAndQueue() {
 
     const list = document.getElementById('unassignedList');
 
-    // Собираем существующие карточки в Map для точечного обновления
     const existingCards = new Map(
         [...list.children].map(el => [el.dataset.gid, el])
     );
@@ -1910,7 +2017,6 @@ function _renderStatsAndQueue() {
 
             let div = existingCards.get(g.id);
             if (!div) {
-                // Новая карточка — создаём и добавляем
                 div = document.createElement('div');
                 div.dataset.gid = g.id;
                 list.appendChild(div);
@@ -1920,7 +2026,6 @@ function _renderStatsAndQueue() {
         }
     });
 
-    // Удаляем карточки гостей, которых больше нет в очереди
     existingCards.forEach((el, id) => {
         if (!seen.has(id)) el.remove();
     });
@@ -1932,36 +2037,44 @@ function _renderStatsAndQueue() {
 
     if (currentRole === 'chef')   renderChefPanel();
     if (currentRole === 'waiter') renderWaiterPanel();
+
+    // PWA — уведомляем о выездах через браузерные Notification (оффлайн-режим)
+    if (checkoutCount > 0 && 'Notification' in window && Notification.permission === 'granted') {
+        if (!window._checkoutLocalNotified) {
+            window._checkoutLocalNotified = true;
+            setTimeout(() => {
+                new Notification('👑 Три Короны — Выезды сегодня', {
+                    body:  `${checkoutCount} гостей выезжают сегодня`,
+                    icon:  '/icons/icon-192.png',
+                    badge: '/icons/icon-192.png',
+                    tag:   'checkouts-today'
+                });
+            }, 3000);
+        }
+    }
 }
 
 const updatePendingCount = () => {
     document.getElementById('countPending').innerText = allTables.filter(t => t.isPending).length;
 };
 
-// ──────────────────────────────────────────────────────
-// RENDER TABLES — точечное обновление DOM (главная оптимизация)
-// Вместо canvas.innerHTML = '' — обновляем только изменившиеся столы
-// ──────────────────────────────────────────────────────
 const renderTables = debounce(_renderTables, 60);
 
-// Возвращает CSS-класс статуса стола
 function getTableStatusClass(t) {
-    if (t.status === 'cleaning') return 'tbl-cleaning'; // серый
-    if (!t.guestId)              return 'tbl-free';     // зелёный
-    if (t.isPending)             return 'tbl-booked';   // жёлтый (в пути)
-    return 'tbl-busy';                                   // красный (занят)
+    if (t.status === 'cleaning') return 'tbl-cleaning';
+    if (!t.guestId)              return 'tbl-free';
+    if (t.isPending)             return 'tbl-booked';
+    return 'tbl-busy';
 }
 
 function _renderTables() {
     const canvas = document.getElementById('mapCanvas');
     const today  = getTodayStr();
 
-    // Набор ID столов текущей зоны
     const visibleIds = new Set(
         allTables.filter(t => t.zone === currentZone).map(t => t.id)
     );
 
-    // Удаляем узлы, которых нет в текущей зоне
     tableNodeMap.forEach((el, id) => {
         if (!visibleIds.has(id)) {
             el.remove();
@@ -1969,7 +2082,6 @@ function _renderTables() {
         }
     });
 
-    // Добавляем новые / обновляем существующие
     allTables.forEach(t => {
         if (t.zone !== currentZone) return;
 
@@ -1998,17 +2110,12 @@ function _renderTables() {
             ${t.waiter ? `<div class="waiter-line">👤 ${t.waiter}</div>` : ''}
         `;
 
-        // Ключ для сравнения — пересоздаём DOM только если что-то реально изменилось
         const renderKey = `${classes}|${t.x}|${t.y}|${innerHTML}`;
 
         let el = tableNodeMap.get(t.id);
 
         if (!el) {
-            // Новый стол: создаём элемент и вешаем события ОДИН РАЗ
             el = document.createElement('div');
-
-            // Используем замыкание с поиском свежих данных по id —
-            // это важно чтобы после перемещения данные не были устаревшими
             el.addEventListener('mousedown', (e) => {
                 const fresh = allTables.find(x => x.id === t.id) || t;
                 handleTableInteraction(e, el, fresh);
@@ -2022,7 +2129,6 @@ function _renderTables() {
             tableNodeMap.set(t.id, el);
         }
 
-        // Обновляем только если содержимое изменилось
         if (el.dataset.renderKey !== renderKey) {
             el.className     = classes;
             el.style.cssText = `left:${t.x||50}px; top:${t.y||50}px`;
@@ -2032,9 +2138,6 @@ function _renderTables() {
     });
 }
 
-// ──────────────────────────────────────────────────────
-// FIREBASE LISTENERS
-// ──────────────────────────────────────────────────────
 onSnapshot(collection(db, 'guests'), (sn) => {
     allGuests = [];
     sn.forEach(d => {
@@ -2057,9 +2160,6 @@ onSnapshot(collection(db, 'tables'), (sn) => {
     if (currentRole === 'waiter') renderWaiterPanel();
 }, (err) => { console.error('Firestore tables error:', err); showToast('❌ Ошибка БД столов: ' + err.message); });
 
-// ──────────────────────────────────────────────────────
-// CALENDAR
-// ──────────────────────────────────────────────────────
 window.generateCalendar = (preserveExisting=true) => {
     const outDate = parseLocalDate(document.getElementById('gOut').value);
     if (!outDate) { guestCalendar=[]; selectedDayIndex=null; renderCalendarUI(); renderSelectedDayEditor(); return; }
@@ -2205,9 +2305,6 @@ window.bulkMeal = (mode) => {
     renderSelectedDayEditor();
 };
 
-// ──────────────────────────────────────────────────────
-// SAVE GUEST
-// ──────────────────────────────────────────────────────
 window.saveGuest = async () => {
     const room    = document.getElementById('gRoom').value.trim();
     const name    = document.getElementById('gName').value.trim();
@@ -2248,9 +2345,6 @@ window.saveGuest = async () => {
     }
 };
 
-// ──────────────────────────────────────────────────────
-// TABLE MODAL
-// ──────────────────────────────────────────────────────
 window.openTableModal = async (id, data) => {
     selectedTableId = id;
     document.getElementById('tTitle').innerText = 'Стол №' + data.number;
@@ -2317,7 +2411,6 @@ window.deleteCurrentTable = async () => {
     if (!confirm(`Удалить стол №${t?.number||'?'} навсегда?`)) return;
     try {
         await deleteDoc(doc(db,'tables',selectedTableId));
-        // Удаляем узел из карты DOM
         const el = tableNodeMap.get(selectedTableId);
         if (el) { el.remove(); tableNodeMap.delete(selectedTableId); }
         closeAllModals();
@@ -2337,7 +2430,7 @@ window.assignToTable = async () => {
             isPending: true,
             isModified: false,
             modificationText: '',
-            seatedAt: Date.now() // ← для таймера в панели официанта
+            seatedAt: Date.now()
         });
         closeAllModals();
         showToast(`🪑 ${g.name} посажен(а) за стол`);
@@ -2361,16 +2454,13 @@ window.freeTable = async () => {
             isPending: false,
             isModified: false,
             modificationText: '',
-            seatedAt: null // ← сбрасываем таймер
+            seatedAt: null
         });
         closeAllModals();
         showToast('🗃️ Гость перемещён в архив');
     } catch(err) { alert('❌ Ошибка: ' + err.message); }
 };
 
-// ──────────────────────────────────────────────────────
-// LISTS
-// ──────────────────────────────────────────────────────
 const openList = (title, mode, items, withSearch=false) => {
     currentListMode  = mode;
     currentListItems = items;
@@ -2476,9 +2566,6 @@ window.showCheckoutsToday = () => {
     openList(`🚪 Выезды сегодня (${items.length})`, 'checkouts', items, false);
 };
 
-// ──────────────────────────────────────────────────────
-// ARCHIVE DETAIL
-// ──────────────────────────────────────────────────────
 window.openArchiveDetails = (id) => {
     const g = allGuests.find(x => x.id===id);
     if (!g) return;
@@ -2532,22 +2619,15 @@ window.confirmClearArchive = async () => {
     showToast(`🗑️ Архив очищен (${archived.length} записей)`);
 };
 
-// ──────────────────────────────────────────────────────
-// ZONE SWITCH
-// ──────────────────────────────────────────────────────
 window.switchZone = (z, e) => {
     currentZone = z;
     document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
     e.target.classList.add('active');
-    // При смене зоны очищаем карту узлов — они относятся к прошлой зоне
     tableNodeMap.forEach(el => el.remove());
     tableNodeMap.clear();
     renderTables();
 };
 
-// ──────────────────────────────────────────────────────
-// GUEST MODAL OPEN
-// ──────────────────────────────────────────────────────
 window.openGuestModal = (id=null) => {
     editingGuestId   = id;
     selectedDayIndex = null;
@@ -2582,16 +2662,13 @@ window.openGuestModal = (id=null) => {
     showModal('guestModal', true);
 };
 
-// ──────────────────────────────────────────────────────
-// ADD TABLE — использует кастомный prompt вместо браузерного
-// ──────────────────────────────────────────────────────
 window.addNewTable = async () => {
     const zoneName = currentZone==='main' ? 'Зал' : currentZone==='big_terrace' ? 'Б. Терраса' : 'М. Терраса';
     const n = await showPromptModal(
         'Добавить стол',
         `Введите номер нового стола (${zoneName})`
     );
-    if (!n) return; // отмена
+    if (!n) return;
 
     const area = document.getElementById('mapArea');
     try {
@@ -2610,9 +2687,6 @@ window.addNewTable = async () => {
     } catch(err) { alert('❌ Ошибка: ' + err.message); }
 };
 
-// ──────────────────────────────────────────────────────
-// DRAG & INTERACTION
-// ──────────────────────────────────────────────────────
 function handleTableInteraction(e, el, data) {
     if (e.type === 'mousedown') e.preventDefault();
 
@@ -2688,7 +2762,6 @@ function handleTableInteraction(e, el, data) {
     document.addEventListener('touchend',  onEnd);
 }
 
-// MAP PAN (mouse)
 const mapArea = document.getElementById('mapArea');
 let isPanning = false, panStartX, panStartY, panScrollL, panScrollT;
 
@@ -2712,9 +2785,6 @@ const stopPan = () => { isPanning = false; mapArea.style.cursor = 'grab'; };
 mapArea.addEventListener('mouseup',    stopPan);
 mapArea.addEventListener('mouseleave', stopPan);
 
-// ──────────────────────────────────────────────────────
-// MODALS
-// ──────────────────────────────────────────────────────
 function showModal(id, s) {
     document.getElementById(id).style.display      = s ? 'block' : 'none';
     document.getElementById('overlay').style.display = s ? 'block' : 'none';
@@ -2735,5 +2805,317 @@ window.closeAllModals = () => {
 };
 
 </script>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- PWA — Service Worker + Push Notifications              -->
+<!-- Отдельный <script> (не module), не меняет логику выше  -->
+<!-- ════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ════════════════════════════════════════════════════════
+  // ⚙️  НАСТРОЙКИ — ЗАМЕНИТЕ ПОСЛЕ ГЕНЕРАЦИИ КЛЮЧЕЙ
+  // Сгенерировать: node generate-vapid-keys.js
+  // ════════════════════════════════════════════════════════
+  const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY';
+  // URL вашего push-сервера (server.js)
+  const PUSH_SERVER_URL  = 'http://localhost:3001';
+
+  // ── Обработка параметров URL (для deep links из уведомлений)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlAction = urlParams.get('action');
+  if (urlAction) {
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (urlAction === 'checkouts'  && typeof showCheckoutsToday === 'function')  showCheckoutsToday();
+        if (urlAction === 'all-guests' && typeof showAllGuests       === 'function')  showAllGuests();
+        if (urlAction === 'add-guest'  && typeof openGuestModal      === 'function')  openGuestModal();
+      }, 1500);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 1. SERVICE WORKER — регистрация
+  // ═══════════════════════════════════════════════════════
+  let swRegistration = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        swRegistration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        });
+        console.log('[PWA] SW зарегистрирован:', swRegistration.scope);
+
+        // Слушаем обновления SW
+        swRegistration.addEventListener('updatefound', () => {
+          const newWorker = swRegistration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Новый SW установлен — показываем баннер обновления
+              window._pendingSwUpdate = newWorker;
+              document.getElementById('swUpdateBanner').style.display = 'block';
+            }
+          });
+        });
+
+        // Настраиваем push после регистрации SW
+        await setupPushNotifications(swRegistration);
+
+        // Обновляем UI кнопки уведомлений
+        updateNotifBtnUI();
+
+      } catch(err) {
+        console.warn('[PWA] SW не зарегистрирован:', err);
+      }
+    });
+
+    // Перезагрузка при смене активного SW
+    let swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!swRefreshing) { swRefreshing = true; window.location.reload(); }
+    });
+
+    // Сообщения от SW (уведомление кликнуто)
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+        const { action } = event.data;
+        if (action === 'view-checkouts' && typeof showCheckoutsToday === 'function') {
+          showCheckoutsToday();
+        } else if (action === 'view-guests' && typeof showAllGuests === 'function') {
+          showAllGuests();
+        }
+      }
+    });
+  }
+
+  // Применить обновление SW
+  window.applySwUpdate = () => {
+    if (window._pendingSwUpdate) {
+      window._pendingSwUpdate.postMessage({ type: 'SKIP_WAITING' });
+    }
+    document.getElementById('swUpdateBanner').style.display = 'none';
+  };
+
+  // ═══════════════════════════════════════════════════════
+  // 2. PWA INSTALL PROMPT
+  // ═══════════════════════════════════════════════════════
+  let deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    // Показываем баннер только если пользователь ещё не отказался
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (!dismissed) {
+      setTimeout(() => {
+        document.getElementById('installBanner').style.display = 'flex';
+      }, 3000);
+    }
+  });
+
+  window.installApp = async () => {
+    if (!deferredInstallPrompt) return;
+    document.getElementById('installBanner').style.display = 'none';
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    console.log('[PWA] Install outcome:', outcome);
+    deferredInstallPrompt = null;
+    if (outcome === 'accepted') {
+      if (typeof showToast === 'function') showToast('✅ Приложение устанавливается!');
+    }
+  };
+
+  window.dismissInstall = () => {
+    document.getElementById('installBanner').style.display = 'none';
+    localStorage.setItem('pwa-install-dismissed', '1');
+  };
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('installBanner').style.display = 'none';
+    deferredInstallPrompt = null;
+    if (typeof showToast === 'function') showToast('🎉 Приложение установлено!');
+    console.log('[PWA] App installed');
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // 3. PUSH NOTIFICATIONS
+  // ═══════════════════════════════════════════════════════
+
+  // Конвертация VAPID public key из base64url в Uint8Array
+  function urlBase64ToUint8Array(base64String) {
+    try {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    } catch(e) {
+      console.error('[Push] Invalid VAPID key:', e);
+      return null;
+    }
+  }
+
+  // Отправить subscription на сервер
+  async function sendSubscriptionToServer(subscription) {
+    if (!subscription) return;
+    try {
+      const res = await fetch(`${PUSH_SERVER_URL}/api/subscribe`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(subscription.toJSON ? subscription.toJSON() : subscription)
+      });
+      if (res.ok) {
+        console.log('[Push] Подписка зарегистрирована на сервере');
+        localStorage.setItem('push-subscribed', '1');
+      }
+    } catch(err) {
+      console.warn('[Push] Сервер недоступен (offline?), подписка сохранена локально:', err.message);
+      // Background sync перешлёт позже
+      if (swRegistration && 'sync' in swRegistration) {
+        swRegistration.sync.register('sync-subscriptions').catch(() => {});
+      }
+    }
+  }
+
+  // Основная функция настройки push
+  async function setupPushNotifications(registration) {
+    if (!('PushManager' in window)) {
+      console.log('[Push] PushManager не поддерживается');
+      return;
+    }
+
+    if (VAPID_PUBLIC_KEY === 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY') {
+      console.warn('[Push] VAPID-ключ не задан. Заполните VAPID_PUBLIC_KEY в index.html');
+      return;
+    }
+
+    try {
+      // Проверяем существующую подписку
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        console.log('[Push] Уже подписан — переотправляем на сервер');
+        await sendSubscriptionToServer(existingSub);
+        return;
+      }
+
+      // Если разрешение уже дано — подписываем без запроса
+      if (Notification.permission === 'granted') {
+        await subscribeToPush(registration);
+      }
+      // Иначе ждём явного нажатия кнопки "Уведомления"
+
+    } catch(err) {
+      console.warn('[Push] Ошибка при настройке:', err);
+    }
+  }
+
+  // Подписаться на push
+  async function subscribeToPush(registration) {
+    try {
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      if (!applicationServerKey) return;
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: applicationServerKey
+      });
+
+      console.log('[Push] Подписка создана');
+      await sendSubscriptionToServer(subscription);
+
+    } catch(err) {
+      if (err.name === 'NotAllowedError') {
+        console.warn('[Push] Пользователь отклонил уведомления');
+      } else {
+        console.error('[Push] Ошибка подписки:', err);
+      }
+    }
+  }
+
+  // Запросить разрешение (вызывается кнопкой 🔔)
+  window.requestPushPermission = async () => {
+    if (!('Notification' in window)) {
+      if (typeof showToast === 'function') showToast('❌ Уведомления не поддерживаются в вашем браузере');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      if (typeof showToast === 'function') showToast('🔔 Уведомления заблокированы. Разрешите в настройках браузера.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    updateNotifBtnUI();
+
+    if (permission === 'granted') {
+      if (typeof showToast === 'function') showToast('🔔 Уведомления включены!');
+      if (swRegistration) {
+        await subscribeToPush(swRegistration);
+      }
+    } else {
+      if (typeof showToast === 'function') showToast('🔕 Уведомления не разрешены');
+    }
+  };
+
+  // Обновить вид кнопки уведомлений
+  function updateNotifBtnUI() {
+    const btn = document.getElementById('notifBtn');
+    if (!btn || !('Notification' in window)) return;
+
+    const perm = Notification.permission;
+    btn.classList.remove('active', 'denied');
+
+    if (perm === 'granted') {
+      btn.classList.add('active');
+      btn.title = 'Push-уведомления включены';
+      btn.innerHTML = '🔔 <span>Уведомления ✓</span>';
+    } else if (perm === 'denied') {
+      btn.classList.add('denied');
+      btn.title = 'Уведомления заблокированы — разрешите в настройках браузера';
+      btn.innerHTML = '🔕 <span>Заблокированы</span>';
+    } else {
+      btn.title = 'Нажмите чтобы включить push-уведомления';
+      btn.innerHTML = '🔔 <span>Уведомления</span>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 4. OFFLINE / ONLINE ИНДИКАЦИЯ
+  // ═══════════════════════════════════════════════════════
+  function handleOnlineStatus() {
+    if (navigator.onLine) {
+      if (typeof showToast === 'function') showToast('✅ Подключение восстановлено');
+    } else {
+      if (typeof showToast === 'function') showToast('📵 Работаем в оффлайн-режиме', 4000);
+    }
+  }
+
+  window.addEventListener('online',  handleOnlineStatus);
+  window.addEventListener('offline', handleOnlineStatus);
+
+  // ═══════════════════════════════════════════════════════
+  // 5. ИНИЦИАЛИЗАЦИЯ
+  // ═══════════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', () => {
+    updateNotifBtnUI();
+
+    // Сбрасываем флаг локального уведомления о выездах в полночь
+    const resetCheckoutFlag = () => {
+      const now     = new Date();
+      const msUntilMidnight = (new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 5)).getTime() - now.getTime();
+      setTimeout(() => {
+        window._checkoutLocalNotified = false;
+        resetCheckoutFlag();
+      }, msUntilMidnight);
+    };
+    resetCheckoutFlag();
+  });
+
+})();
+</script>
+<!-- ════════════════════════════════════════════════════════ -->
+
 </body>
 </html>
