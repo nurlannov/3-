@@ -1,0 +1,5396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ТРИ КОРОНЫ</title>
+<script>
+// ─── SW VERSION GUARD ───────────────────────────────────────────────────
+// Если в браузере висит старый SW с другим именем кеша — удаляем его.
+// Это выполняется синхронно в начале страницы до любого другого кода.
+(function() {
+  var CURRENT_CACHE = 'tri-korony-shell-v4';
+  if (!('serviceWorker' in navigator) || !('caches' in window)) return;
+  // Проверяем и чистим устаревшие кеши немедленно
+  caches.keys().then(function(keys) {
+    keys.forEach(function(key) {
+      if (key !== CURRENT_CACHE) {
+        caches.delete(key);
+        console.log('[Guard] Удалён старый кеш:', key);
+      }
+    });
+  });
+  // Если есть старые SW — удаляем их
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) {
+      reg.update(); // проверяем обновление
+    });
+  });
+})();
+// ────────────────────────────────────────────────────────────────────────
+</script>
+
+<meta name="theme-color" content="#C9963A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Три Короны">
+<meta name="application-name" content="Три Короны">
+<meta name="msapplication-TileColor" content="#0D1B2A">
+<meta name="description" content="Система управления столами и гостями отеля «Три Короны»">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230D1B2A'/><text x='50%25' y='58%25' font-size='38' text-anchor='middle' fill='%23C9963A' font-family='serif'>%E2%99%9A</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230D1B2A'/><text x='50%25' y='58%25' font-size='38' text-anchor='middle' fill='%23C9963A' font-family='serif'>%E2%99%9A</text></svg>">
+<script>
+  // Inline manifest (избегаем 404 на /manifest.json при локальном запуске)
+  try {
+    const manifest = {
+      name: "Три Короны", short_name: "Три Короны",
+      start_url: ".", display: "standalone",
+      background_color: "#0D1B2A", theme_color: "#C9963A",
+      icons: [{ src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%230D1B2A'/><text x='50%25' y='60%25' font-size='110' text-anchor='middle' fill='%23C9963A' font-family='serif'>%E2%99%9A</text></svg>", sizes: "192x192", type: "image/svg+xml" }]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const link = document.createElement('link');
+    link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  } catch(_) {}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --gold: #C9963A;
+  --gold-light: #E8C87A;
+  --gold-dim: rgba(201,150,58,0.15);
+  --gold-glow: rgba(201,150,58,0.35);
+  --navy: #0D1B2A;
+  --navy-2: #152234;
+  --navy-3: #1C2E44;
+  --navy-4: #243650;
+  --glass: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.08);
+  --success: #2EC98A;
+  --success-dim: rgba(46,201,138,0.15);
+  --danger: #FF5A5A;
+  --danger-dim: rgba(255,90,90,0.15);
+  --pending: #A78BFA;
+  --pending-dim: rgba(167,139,250,0.15);
+  --checkout: #FB923C;
+  --checkout-dim: rgba(251,146,60,0.15);
+  --text: #E8E4DC;
+  --text-muted: #8A9BB0;
+  --text-dim: #4A5E75;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --table-free-color: #e3d4d4;
+  --table-free-dim: rgba(46,201,138,0.12);
+  --table-busy-color: #36ee39;
+  --table-busy-dim: rgba(87, 201, 46, 0.12);
+  --table-booked-color: #FBBF24;
+  --table-booked-dim: #a78bfa5e;
+  --table-cleaning-color: #64748B;
+  --table-cleaning-dim: rgba(100,116,139,0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── TOP BAR ─── */
+.top-bar {
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  z-index: 200;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border-right: 1px solid var(--glass-border);
+  height: 52px;
+}
+
+.brand-crowns { font-size: 18px; letter-spacing: 2px; }
+
+.brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.role-tabs { display: flex; gap: 0; height: 52px; padding: 0 8px; }
+
+.role-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.role-tab:hover { color: var(--text); }
+.role-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.role-tab .tab-icon { font-size: 15px; }
+
+/* ─── STATS BAR ─── */
+.stats-bar {
+  background: var(--navy-3);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 6px;
+  height: 44px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+
+.stat-chip .icon { font-size: 13px; }
+.stat-chip .label { color: var(--text-muted); }
+.stat-chip .val { color: var(--gold); font-weight: 600; }
+.stat-chip.danger .val { color: var(--danger); }
+.stat-chip.pending .val { color: var(--pending); }
+.stat-chip.checkout-chip { cursor: pointer; }
+.stat-chip.checkout-chip .val { color: var(--checkout); }
+.stat-chip.checkout-chip:hover { border-color: var(--checkout); }
+
+.stats-spacer { flex: 1; }
+
+/* ─── ADMIN HEADER ─── */
+.admin-header {
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 52px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.zone-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.3);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.zone-tab {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.zone-tab.active { background: var(--gold); color: var(--navy); }
+
+.header-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+
+.hbtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.hbtn:hover { background: rgba(255,255,255,0.08); }
+.hbtn.gold { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.hbtn.gold:hover { background: var(--gold); color: var(--navy); }
+.hbtn.success { background: var(--success-dim); border-color: var(--success); color: var(--success); }
+.hbtn.success:hover { background: var(--success); color: var(--navy); }
+.hbtn.danger-btn { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+.hbtn.pending-btn { background: var(--pending-dim); border-color: var(--pending); color: var(--pending); }
+.hbtn.checkout-btn { background: var(--checkout-dim); border-color: var(--checkout); color: var(--checkout); }
+.mobile-queue-btn { display: none; }
+
+/* ─── MAIN LAYOUT ─── */
+.main-layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--navy-2);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.close-sidebar-btn {
+  display: none;
+  cursor: pointer;
+  font-size: 18px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 2px 6px;
+}
+
+.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+/* ─── QUEUE CARDS ─── */
+.guest-card {
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.guest-card:hover { border-color: rgba(255,255,255,0.12); }
+
+.guest-card.checkout-today {
+  border-color: var(--danger);
+  background: linear-gradient(135deg, var(--navy-3), rgba(255,90,90,0.05));
+}
+
+.guest-card b { font-size: 13px; color: var(--text); }
+.guest-card small { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+.guest-card .edit-btn {
+  position: absolute;
+  right: 8px; top: 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 7px;
+  transition: all 0.2s;
+}
+
+.guest-card .edit-btn:hover { color: var(--gold); border-color: var(--gold); }
+.checkout-icon { color: var(--danger); font-weight: 600; font-size: 11px; }
+
+.note-preview-sm {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(201,150,58,0.08);
+  border: 1px solid rgba(201,150,58,0.2);
+  border-radius: 5px;
+  padding: 4px 8px;
+  margin-top: 5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* ─── MAP ─── */
+.map-area {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  background-color: #0A1520;
+  background-image:
+    linear-gradient(rgba(201,150,58,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,150,58,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.map-area.dragging-table { touch-action: none; }
+
+#mapCanvas {
+  position: relative;
+  width: 2400px;
+  height: 1600px;
+}
+
+/* ─── СТОЛЫ ─── */
+.table {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  text-align: center;
+  z-index: 50;
+  touch-action: none;
+  padding: 6px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  background: var(--navy-3);
+  border: 2.5px solid var(--navy-4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.table b { font-size: 16px; color: var(--text); font-weight: 600; line-height: 1; }
+
+.table.tbl-free {
+  border-color: var(--table-free-color);
+  background: var(--table-free-dim);
+  box-shadow: 0 0 0 4px rgba(46,201,138,0.07), 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-free b { color: var(--table-free-color); }
+
+.table.tbl-busy,
+.table.occupied {
+  border-color: var(--table-busy-color);
+  background: var(--table-busy-dim);
+  box-shadow: 0 0 0 4px rgba(255,90,90,0.07), 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-busy b,
+.table.occupied b { color: var(--table-busy-color); }
+
+.table.tbl-booked,
+.table.pending {
+  border-color: var(--table-booked-color);
+  background: var(--table-booked-dim);
+  box-shadow: 0 0 0 4px rgba(251,191,36,0.07), 0 4px 20px rgba(0,0,0,0.4);
+  animation: pulse-booked 2.5s ease-in-out infinite;
+}
+.table.tbl-booked b,
+.table.pending b { color: var(--table-booked-color); }
+
+@keyframes pulse-booked {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+.table.tbl-cleaning {
+  border-color: var(--table-cleaning-color);
+  background: var(--table-cleaning-dim);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.table.tbl-cleaning b { color: #94A3B8; }
+
+.table.checkout-warning {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(255,90,90,0.3), 0 4px 20px rgba(255,90,90,0.2) !important;
+}
+
+.table.modified {
+  box-shadow: 0 0 0 3px rgba(201,150,58,0.4), 0 4px 20px rgba(201,150,58,0.2);
+}
+
+.table.hold-active {
+  transform: scale(1.1);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 2px var(--gold);
+  z-index: 1000;
+}
+
+.table .guest-name  { font-size: 9px; color: var(--text-muted); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.table .portion-line{ font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+.table .meal-line   { font-size: 8px; color: var(--gold); line-height: 1.2; margin-top: 2px; max-width: 90px; }
+.table .note-line   { font-size: 9px; color: var(--pending); margin-top: 2px; }
+.table .waiter-line { font-size: 8px; color: var(--gold-light); font-weight: 500; margin-top: 2px; opacity: 0.7; }
+
+.change-alert {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 12px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  z-index: 60;
+}
+
+.checkout-dot {
+  position: absolute;
+  top: -4px; left: -4px;
+  background: var(--danger);
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+}
+
+/* ─── MAP HINT ─── */
+.map-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,27,42,0.85);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  z-index: 190;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+/* ─── MODALS ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 900;
+  display: none;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: none;
+  width: 92%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+#guestModal { z-index: 1100; }
+#archiveDetailModal { z-index: 1100; }
+
+.modal h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 18px;
+}
+
+/* ─── FORM ELEMENTS ─── */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  margin-top: 6px;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+select option { background: var(--navy-2); }
+textarea { resize: vertical; min-height: 60px; }
+
+.field-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  display: block;
+  letter-spacing: 0.5px;
+}
+
+.input-row { display: flex; gap: 8px; }
+.input-row > * { flex: 1; }
+
+.form-block {
+  margin-top: 14px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.form-block-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.form-block-legend span { font-size: 14px; }
+.form-block-body { padding: 14px; background: rgba(0,0,0,0.10); }
+.form-block-body .field-label:first-child { margin-top: 0; }
+
+.form-section {
+  margin-top: 12px;
+  border: 1px solid var(--glass-border);
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+}
+
+.form-section label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  width: 100%;
+  margin-top: 10px;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.btn-gold    { background: var(--gold); color: var(--navy); }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-success { background: var(--success); color: var(--navy); }
+.btn-success:hover { filter: brightness(1.1); }
+.btn-danger  { background: var(--danger); color: white; }
+.btn-danger:hover { filter: brightness(1.1); }
+.btn-ghost   { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); }
+.btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.btn-delete-table {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(255,90,90,0.3);
+  border-radius: 10px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.btn-delete-table:hover { background: var(--danger); color: white; }
+
+/* ─── CALENDAR ─── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.day-box {
+  padding: 8px 6px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+}
+
+.day-box.active {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+  box-shadow: 0 0 0 1px rgba(201,150,58,0.2);
+}
+
+.meal-mini-tag {
+  display: inline-block;
+  min-width: 18px; height: 18px;
+  line-height: 18px;
+  border-radius: 4px;
+  margin: 1px;
+  font-weight: 600;
+  font-size: 9px;
+  background: var(--navy-4);
+  color: var(--text-dim);
+}
+
+.meal-mini-tag.on     { background: var(--gold); color: var(--navy); }
+.meal-mini-tag.locked { opacity: 0.4; cursor: not-allowed; }
+
+.meal-day-editor {
+  display: none;
+  margin-top: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.meal-day-title   { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--gold); }
+.meal-day-current { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+
+.meal-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+}
+
+.meal-row button {
+  margin: 0; padding: 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--gold-dim);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.meal-row button.off { background: var(--navy-4); color: var(--text-muted); border-color: transparent; }
+.meal-row .count-wrap { display: flex; flex-direction: column; gap: 3px; }
+.meal-row .count-wrap label { font-size: 10px; color: var(--text-muted); }
+.meal-row .count-wrap input { margin-top: 0; padding: 7px; font-size: 12px; }
+
+.meal-quick-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+
+.q-btn {
+  font-size: 11px;
+  padding: 8px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.q-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ─── INFO BOX ─── */
+.info-box {
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,150,58,0.3);
+  color: var(--gold-light);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ─── TABLE MODAL ─── */
+#occData { font-size: 13px; color: var(--text); line-height: 1.8; margin-bottom: 10px; }
+#occData b { color: var(--gold); }
+#occData span { color: var(--gold-light); }
+
+.note-preview {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(201,150,58,0.06);
+  border: 1px solid rgba(201,150,58,0.15);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.waiter-block { margin-top: 16px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
+.waiter-block label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: var(--text); }
+
+/* ─── LIST MODAL ─── */
+.muted { color: var(--text-muted); font-size: 12px; }
+.search-box { margin-bottom: 10px; }
+
+.list-item {
+  padding: 12px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
+.list-item:hover { background: var(--navy-3); }
+
+.checkout-list-item {
+  padding: 12px 14px;
+  border-left: 3px solid var(--checkout);
+  background: rgba(251,146,60,0.05);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.archive-day-line {
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  margin-top: 6px;
+  background: var(--navy-3);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── CHEF PANEL ─── */
+#chefPanel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--navy);
+  padding: 24px;
+  flex-direction: column;
+}
+
+#chefPanel::-webkit-scrollbar { width: 4px; }
+#chefPanel::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+.chef-header { text-align: center; margin-bottom: 28px; }
+
+.chef-title-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.chef-date-text { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+.chef-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto 32px;
+}
+
+.chef-card {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.chef-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.chef-card.breakfast::before { background: #F1C40F; }
+.chef-card.lunch::before     { background: var(--success); }
+.chef-card.dinner::before    { background: var(--danger); }
+
+.chef-emoji     { font-size: 24px; margin-bottom: 6px; }
+.chef-meal-name { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+.chef-num       { font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 700; line-height: 1; margin: 4px 0; }
+.chef-card.breakfast .chef-num { color: #F1C40F; }
+.chef-card.lunch .chef-num     { color: var(--success); }
+.chef-card.dinner .chef-num    { color: var(--danger); }
+.chef-sub { font-size: 12px; color: var(--text-muted); }
+
+.chef-section-title {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 auto 12px;
+  max-width: 560px;
+}
+
+.chef-breakdown {
+  max-width: 560px;
+  margin: 0 auto 12px;
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.chef-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+}
+
+.chef-breakdown-row:last-child { border-bottom: none; }
+.chef-breakdown-row .label { color: var(--text-muted); }
+.chef-breakdown-row .values { display: flex; gap: 12px; }
+.val-b { color: #F1C40F; font-weight: 600; }
+.val-l { color: var(--success); font-weight: 600; }
+.val-d { color: var(--danger); font-weight: 600; }
+
+/* ─── WAITER PANEL ─── */
+#waiterPanel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--navy);
+  padding: 16px;
+  flex-direction: column;
+}
+
+#waiterPanel::-webkit-scrollbar { width: 4px; }
+#waiterPanel::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
+
+.waiter-select-bar {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.waiter-select-bar label { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; }
+
+.waiter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 12px;
+}
+
+.wtc-card {
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-top: 3px solid var(--navy-4);
+  border-radius: var(--radius);
+  padding: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  position: relative;
+}
+
+.wtc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+
+.wtc-card.wc-free     { border-top-color: var(--text-dim); }
+.wtc-card.wc-occupied { border-top-color: var(--success); }
+.wtc-card.wc-pending  { border-top-color: var(--pending); }
+.wtc-card.wc-checkout { border-top-color: var(--danger); }
+
+.wtc-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.wtc-guest {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.wtc-meal { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4; }
+
+.wtc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.wtc-timer { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.wtc-timer.overtime { color: var(--danger); }
+.wtc-bill  { font-size: 11px; font-weight: 600; color: var(--gold); }
+
+.wtc-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.wtc-badge.free     { background: var(--navy-4);       color: var(--text-dim); }
+.wtc-badge.occupied { background: var(--success-dim);  color: var(--success); border: 1px solid rgba(46,201,138,0.3); }
+.wtc-badge.pending  { background: var(--pending-dim);  color: var(--pending); border: 1px solid rgba(167,139,250,0.3); }
+.wtc-badge.checkout { background: var(--danger-dim);   color: var(--danger);  border: 1px solid rgba(255,90,90,0.3); }
+
+/* ─── CUSTOM PROMPT MODAL ─── */
+#promptModal {
+  max-width: 380px;
+  z-index: 1600;
+  animation: modal-in 0.18s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -52%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+#promptOverlay { z-index: 1500; }
+
+.cpbtn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cpbtn-ok     { background: var(--gold); color: var(--navy); }
+.cpbtn-ok:hover { background: var(--gold-light); }
+.cpbtn-cancel { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); }
+.cpbtn-cancel:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+}
+
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── MOBILE DRAWER ─── */
+.queue-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1100;
+  backdrop-filter: blur(2px);
+}
+
+.queue-backdrop.active { display: block; }
+
+/* ─── PWA INSTALL BANNER ─── */
+#installBanner {
+  display: none;
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy-2);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  z-index: 8000;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,150,58,0.1);
+  backdrop-filter: blur(12px);
+  max-width: 360px;
+  width: calc(100% - 32px);
+  animation: slide-up 0.35s ease;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+#installBanner .install-icon   { font-size: 22px; flex-shrink: 0; }
+#installBanner .install-text   { flex: 1; }
+#installBanner .install-title  { font-size: 13px; font-weight: 600; color: var(--gold); }
+#installBanner .install-sub    { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+#installBanner .install-accept {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+#installBanner .install-accept:hover { background: var(--gold-light); }
+#installBanner .install-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+#installBanner .install-close:hover { color: var(--text-muted); }
+
+/* ─── NOTIFICATION BTN ─── */
+#notifBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+#notifBtn:hover  { border-color: var(--gold); color: var(--gold); }
+#notifBtn.active { border-color: var(--success); color: var(--success); background: var(--success-dim); }
+#notifBtn.denied { border-color: var(--danger);  color: var(--danger);  background: var(--danger-dim);  }
+
+/* ─── SW UPDATE BANNER ─── */
+#swUpdateBanner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--gold);
+  color: var(--navy);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9998;
+  text-align: center;
+  cursor: pointer;
+}
+#swUpdateBanner:hover { background: var(--gold-light); }
+
+/* ─── MOBILE ─── */
+@media (max-width: 768px) {
+  .brand-name { display: none; }
+  .brand-crowns { font-size: 16px; }
+  .brand { padding: 0 12px; }
+  .role-tabs { display: none; }
+
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 88%;
+    max-width: 300px;
+    height: 100%;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    border-right: 1px solid var(--glass-border);
+    display: flex !important;
+  }
+
+  .sidebar.open-drawer { transform: translateX(0); }
+  .mobile-queue-btn { display: flex !important; }
+  .close-sidebar-btn { display: block !important; }
+
+  .header-actions .hbtn span { display: none; }
+  .header-actions .hbtn { padding: 6px 10px; }
+
+  .chef-grid { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .chef-num { font-size: 36px; }
+
+  .stats-bar { gap: 4px; padding: 0 8px; }
+  .stat-chip { padding: 4px 8px; font-size: 11px; }
+
+  .waiter-grid { grid-template-columns: repeat(2, 1fr); }
+
+  #notifBtn span { display: none; }
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 3px; }
+
+#archiveClearRow { margin-top: 10px; text-align: center; }
+
+/* ─── SWIPE GESTURES ─── */
+.guest-card-wrapper {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm);
+}
+
+.guest-card-swipe {
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  will-change: transform;
+  touch-action: pan-y;
+}
+
+.swipe-action-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  padding: 0 20px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.swipe-action-bg.archive {
+  left: 0; right: 0;
+  background: var(--danger);
+  justify-content: flex-start;
+}
+
+.swipe-action-bg.edit {
+  left: 0; right: 0;
+  background: var(--gold);
+  justify-content: flex-end;
+  color: var(--navy);
+}
+
+.swipe-action-bg.visible { opacity: 1; }
+
+/* ─── FAB ─── */
+.fab-container {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.fab-menu {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.fab-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.fab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--navy-2);
+  border: 1px solid var(--gold);
+  border-radius: 24px;
+  padding: 8px 16px;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: background 0.2s;
+}
+
+.fab-item:hover { background: var(--gold-dim); }
+.fab-item .fab-icon { font-size: 16px; }
+
+.fab-main {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  transition: transform 0.2s, background 0.2s;
+  position: relative;
+  z-index: 2;
+}
+
+.fab-main:active { transform: scale(0.92); }
+.fab-main:hover { background: var(--gold-light); }
+
+.fab-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1;
+  backdrop-filter: blur(2px);
+}
+
+.fab-backdrop.show { display: block; }
+
+@media (max-width: 768px) {
+  .fab-container { display: flex; }
+}
+
+/* ─── BOTTOM NAV ─── */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--navy-2);
+  border-top: 1px solid var(--glass-border);
+  z-index: 500;
+  justify-content: space-around;
+  align-items: center;
+  height: 60px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  backdrop-filter: blur(12px);
+}
+
+.bottom-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.2s;
+}
+
+.bottom-nav-btn .bn-icon { font-size: 20px; }
+.bottom-nav-btn.active { color: var(--gold); }
+
+@media (max-width: 768px) {
+  .bottom-nav { display: flex; }
+  body { padding-bottom: 60px; }
+  #adminLayout, #chefPanel, #waiterPanel { padding-bottom: 60px; }
+}
+
+/* ─── PULL-TO-REFRESH ─── */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s, opacity 0.2s, padding 0.2s;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ptr-indicator.active {
+  opacity: 1;
+  max-height: 40px;
+  padding: 12px 0;
+}
+
+.ptr-indicator .ptr-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: ptr-spin 0.6s linear infinite;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ptr-indicator.refreshing .ptr-spinner { opacity: 1; }
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── SHORTCUTS MODAL ─── */
+#shortcutsModal { max-width: 400px; z-index: 2000; }
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.shortcuts-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.shortcuts-table td:first-child { width: 60px; text-align: center; }
+
+.shortcuts-table kbd {
+  display: inline-block;
+  background: var(--navy-3);
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'DM Sans', monospace;
+  font-size: 12px;
+  color: var(--gold);
+  min-width: 28px;
+  text-align: center;
+}
+
+.shortcuts-table td:last-child { color: var(--text-muted); }
+
+/* ─── DRAG & DROP ─── */
+.guest-card-swipe.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  border: 1px dashed var(--gold);
+}
+
+.table.drop-target {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 4px rgba(201,150,58,0.3), 0 4px 20px rgba(0,0,0,0.4) !important;
+  transform: scale(1.08);
+  z-index: 200 !important;
+}
+
+.table.drop-target.invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 4px rgba(255,90,90,0.3), 0 4px 20px rgba(0,0,0,0.4) !important;
+}
+
+/* ─── TABLE SIDE PANEL ─── */
+.table-side-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 340px;
+  max-width: 90vw;
+  height: 100%;
+  background: var(--navy-2);
+  border-left: 1px solid var(--glass-border);
+  z-index: 800;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.4);
+}
+
+.table-side-panel.open { transform: translateX(0); }
+
+.table-side-panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.table-side-panel-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 0;
+}
+
+.table-side-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.table-side-panel-close:hover { color: var(--text); }
+
+.table-side-panel-body {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.table-panel-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 799;
+  backdrop-filter: blur(2px);
+}
+
+.table-panel-backdrop.show { display: block; }
+
+@media (max-width: 768px) {
+  .table-side-panel { display: none; }
+  .table-panel-backdrop { display: none; }
+}
+
+/* ─── BULK ACTIONS ─── */
+.bulk-actions-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.bulk-actions-bar.visible { display: flex; }
+
+.bulk-actions-bar .btn {
+  width: auto;
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+.list-item .checkbox-cell {
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.list-item .checkbox-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+  cursor: pointer;
+  margin: 0;
+}
+
+.list-item .item-content { flex: 1; }
+
+/* ─── EXPORT CSV BTN ─── */
+.export-csv-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.export-csv-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ─── LIGHT THEME ─── */
+body.light {
+  --navy: #F5F3EE;
+  --navy-2: #EAE6DD;
+  --navy-3: #DDD9CF;
+  --navy-4: #C4BFAF;
+  --text: #1A1D22;
+  --text-muted: #4A5568;
+  --text-dim: #8B9AAD;
+  --glass: rgba(0,0,0,0.04);
+  --glass-border: rgba(0,0,0,0.1);
+  --gold-dim: rgba(180,120,40,0.15);
+  --gold-glow: rgba(180,120,40,0.25);
+  --success-dim: rgba(46,201,138,0.15);
+  --danger-dim: rgba(255,90,90,0.15);
+  --pending-dim: rgba(167,139,250,0.15);
+  --checkout-dim: rgba(251,146,60,0.15);
+  --table-free-dim: rgba(46,201,138,0.08);
+  --table-busy-dim: rgba(87,201,46,0.08);
+  --table-booked-dim: rgba(167,139,250,0.15);
+  --table-cleaning-dim: rgba(100,116,139,0.1);
+}
+
+body.light .map-area {
+  background-color: #F5F3EE;
+  background-image:
+    linear-gradient(rgba(180,120,40,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(180,120,40,0.08) 1px, transparent 1px);
+}
+
+body.light .table {
+  background: var(--navy-3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+body.light #toast { background: var(--navy-2); color: var(--text); }
+body.light .map-hint { background: rgba(245,243,238,0.85); color: var(--text-dim); }
+body.light .overlay { background: rgba(0,0,0,0.4); }
+body.light .modal { box-shadow: 0 24px 80px rgba(0,0,0,0.2); }
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ─── CONTEXT MENU ─── */
+.context-menu {
+  position: fixed;
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 5000;
+  min-width: 200px;
+  padding: 6px 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  transition: opacity 0.15s, transform 0.15s;
+  backdrop-filter: blur(10px);
+}
+
+.context-menu.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.context-menu-item:hover { background: rgba(255,255,255,0.06); color: var(--gold); }
+.context-menu-item .menu-icon { font-size: 15px; width: 20px; text-align: center; color: var(--gold-dim); }
+.context-menu-item:hover .menu-icon { color: var(--gold); }
+.context-menu-divider { height: 1px; background: var(--glass-border); margin: 4px 0; }
+
+/* ─── OMNISEARCH ─── */
+.omnisearch-wrapper {
+  position: relative;
+  margin: 0 16px;
+  flex: 0 1 280px;
+  min-width: 200px;
+}
+
+.omnisearch-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  background: var(--navy-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-top: 0;
+}
+
+.omnisearch-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+.omnisearch-input::placeholder { color: var(--text-dim); font-size: 12px; }
+
+.omnisearch-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.omnisearch-results {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  margin-top: 6px;
+  background: var(--navy-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 210;
+  max-height: 320px;
+  overflow-y: auto;
+  display: none;
+  backdrop-filter: blur(10px);
+}
+
+.omnisearch-results.visible { display: block; }
+
+.omnisearch-result-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s;
+}
+
+.omnisearch-result-item:last-child { border-bottom: none; }
+.omnisearch-result-item:hover { background: rgba(255,255,255,0.06); }
+.omnisearch-result-item .result-icon { font-size: 16px; width: 24px; text-align: center; }
+.omnisearch-result-item .result-text { flex: 1; font-size: 13px; color: var(--text); }
+.omnisearch-result-item .result-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.omnisearch-result-item .result-highlight { color: var(--gold); font-weight: 600; }
+.omnisearch-no-results { padding: 14px; text-align: center; color: var(--text-dim); font-size: 12px; }
+
+/* ─── AUDIT MODAL ─── */
+#auditModal { max-width: 560px; z-index: 1100; }
+
+.audit-list { max-height: 50vh; overflow-y: auto; margin-bottom: 10px; }
+
+.audit-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.audit-time { color: var(--text-dim); white-space: nowrap; font-size: 11px; }
+.audit-action { color: var(--gold); font-weight: 600; margin-right: 4px; }
+.audit-details { color: var(--text-muted); word-break: break-word; }
+.audit-clear-btn { margin-top: 8px; width: auto; padding: 8px 16px; font-size: 12px; }
+
+/* ─── 2026 PREMIUM GLASS REFRESH ─── */
+:root {
+  --gold: #F2C76E;
+  --gold-light: #FFE3A1;
+  --gold-dim: rgba(242,199,110,0.14);
+  --gold-glow: rgba(242,199,110,0.38);
+  --navy: #080D16;
+  --navy-2: rgba(15,24,38,0.78);
+  --navy-3: rgba(23,35,54,0.72);
+  --navy-4: rgba(54,69,92,0.82);
+  --glass: rgba(255,255,255,0.075);
+  --glass-strong: rgba(255,255,255,0.12);
+  --glass-border: rgba(255,255,255,0.16);
+  --glass-highlight: rgba(255,255,255,0.26);
+  --surface-shadow: 0 22px 70px rgba(0,0,0,0.38);
+  --neon-cyan: #6DE7FF;
+  --neon-mint: #56F3B7;
+  --neon-rose: #FF7AAE;
+  --text: #F8F4EA;
+  --text-muted: #AAB8C9;
+  --text-dim: #718196;
+  --radius: 22px;
+  --radius-sm: 14px;
+  --success: #56F3B7;
+  --danger: #FF6684;
+  --pending: #BFA4FF;
+  --checkout: #FFB15C;
+}
+
+html { background: #080D16; }
+
+body {
+  background:
+    linear-gradient(135deg, rgba(5,9,16,0.96), rgba(11,19,31,0.98) 42%, rgba(26,15,27,0.95)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 96px);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(242,199,110,0.075), transparent 26%),
+    linear-gradient(235deg, rgba(109,231,255,0.06), transparent 32%),
+    linear-gradient(0deg, rgba(255,122,174,0.035), transparent 46%);
+  z-index: -1;
+}
+
+.top-bar,
+.stats-bar,
+.admin-header,
+.sidebar,
+.bottom-nav {
+  background: rgba(12,19,31,0.68);
+  border-color: var(--glass-border);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.22), inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+}
+
+.top-bar { min-height: 58px; }
+.brand { height: 58px; }
+.role-tabs { height: 58px; }
+.brand-crowns { filter: drop-shadow(0 0 12px var(--gold-glow)); }
+.brand-name { color: var(--gold-light); text-shadow: 0 0 22px var(--gold-glow); }
+
+.role-tab,
+.zone-tab,
+.hbtn,
+#notifBtn,
+.theme-toggle-btn,
+.export-csv-btn,
+.bottom-nav-btn,
+.fab-main,
+.fab-item,
+.btn,
+.table,
+.guest-card-swipe,
+.list-item,
+.day-box,
+.meal-row button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.role-tab {
+  border-bottom-width: 0;
+  position: relative;
+  border-radius: 14px;
+  margin: 8px 2px;
+  height: 42px;
+}
+.role-tab::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+.role-tab:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
+.role-tab.active { background: rgba(242,199,110,0.12); color: var(--gold-light); }
+.role-tab.active::after { background: var(--gold); box-shadow: 0 0 18px var(--gold-glow); }
+
+.stat-chip,
+.hbtn,
+#notifBtn,
+.theme-toggle-btn,
+.export-csv-btn,
+.zone-tabs,
+.omnisearch-input,
+input,
+select,
+textarea {
+  background: rgba(255,255,255,0.07);
+  border-color: var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.stat-chip { height: 30px; }
+.stat-chip .val { color: var(--gold-light); }
+
+.zone-tabs { border: 1px solid var(--glass-border); }
+.zone-tab { min-height: 34px; }
+.zone-tab:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+.zone-tab.active {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #111827;
+  box-shadow: 0 10px 26px rgba(242,199,110,0.24);
+}
+
+.hbtn,
+#notifBtn,
+.theme-toggle-btn,
+.export-csv-btn {
+  min-height: 36px;
+  border-radius: 12px;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+.hbtn:hover,
+#notifBtn:hover,
+.theme-toggle-btn:hover,
+.export-csv-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.25), 0 0 0 1px rgba(242,199,110,0.18);
+}
+
+.sidebar {
+  width: 306px;
+  min-width: 306px;
+}
+
+.sidebar-header,
+.table-side-panel-header,
+.form-block-legend {
+  background: rgba(255,255,255,0.045);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.guest-card,
+.guest-card-swipe,
+.modal,
+.form-block,
+.form-section,
+.waiter-block,
+.context-menu,
+.omnisearch-results,
+.list-item,
+.archive-day-line,
+.chef-card,
+.waiter-table-card,
+.table-side-panel {
+  background: linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.045));
+  border-color: var(--glass-border);
+  box-shadow: var(--surface-shadow), inset 0 1px 0 rgba(255,255,255,0.16);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+.guest-card-swipe {
+  min-height: 96px;
+  cursor: grab;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.guest-card-swipe:active { cursor: grabbing; }
+.guest-card-swipe:hover {
+  border-color: rgba(242,199,110,0.38);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 42px rgba(0,0,0,0.32), 0 0 0 1px rgba(242,199,110,0.12), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.guest-card-swipe.checkout-today {
+  background: linear-gradient(145deg, rgba(255,102,132,0.16), rgba(255,255,255,0.05));
+  border-color: rgba(255,102,132,0.44);
+}
+.guest-card-swipe b { font-size: 14px; color: #fff; }
+.guest-card-swipe small { color: var(--text-muted); }
+
+.swipe-action-bg {
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+.swipe-action-bg.archive {
+  justify-content: flex-end;
+  background: linear-gradient(90deg, rgba(255,102,132,0.08), rgba(255,102,132,0.86));
+}
+.swipe-action-bg.edit {
+  justify-content: flex-start;
+  background: linear-gradient(90deg, rgba(242,199,110,0.9), rgba(242,199,110,0.12));
+}
+
+.map-area {
+  background-color: rgba(7,12,20,0.88);
+  background-image:
+    linear-gradient(rgba(242,199,110,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109,231,255,0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.table {
+  background: linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045));
+  border-width: 2px;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.22);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.table:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 24px 56px rgba(0,0,0,0.46), 0 0 0 5px rgba(242,199,110,0.08), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.table.hold-active {
+  transform: scale(1.1);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 3px var(--gold), 0 0 36px var(--gold-glow);
+}
+.table.tbl-free {
+  border-color: rgba(86,243,183,0.92);
+  background: linear-gradient(145deg, rgba(86,243,183,0.13), rgba(255,255,255,0.04));
+}
+.table.tbl-busy,
+.table.occupied {
+  border-color: rgba(86,243,183,0.78);
+  background: linear-gradient(145deg, rgba(86,243,183,0.17), rgba(255,255,255,0.04));
+}
+.table.tbl-booked,
+.table.pending {
+  border-color: rgba(191,164,255,0.9);
+  background: linear-gradient(145deg, rgba(191,164,255,0.18), rgba(255,255,255,0.04));
+}
+.table.drop-target {
+  border-color: var(--neon-mint) !important;
+  box-shadow: 0 0 0 8px rgba(86,243,183,0.16), 0 0 42px rgba(86,243,183,0.28), 0 24px 54px rgba(0,0,0,0.42) !important;
+}
+.table.drop-target.invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 8px rgba(255,102,132,0.16), 0 0 42px rgba(255,102,132,0.26), 0 24px 54px rgba(0,0,0,0.42) !important;
+}
+
+.overlay {
+  background: rgba(3,7,13,0.58);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+.modal {
+  border-radius: 26px;
+  padding: 26px;
+  animation: premium-modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes premium-modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.modal h3 {
+  color: var(--gold-light);
+  text-shadow: 0 0 18px rgba(242,199,110,0.24);
+}
+
+input,
+select,
+textarea {
+  min-height: 44px;
+  border-radius: 14px;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(242,199,110,0.72);
+  box-shadow: 0 0 0 4px rgba(242,199,110,0.12), 0 0 26px rgba(242,199,110,0.12);
+}
+
+.btn {
+  min-height: 46px;
+  border-radius: 14px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease, background 0.18s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0,0,0,0.28); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn-gold,
+.btn-success {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #111827;
+}
+.btn-success { background: linear-gradient(135deg, var(--success), #D9FFE9); }
+.btn-danger { background: linear-gradient(135deg, var(--danger), #FF9EB4); }
+.btn-ghost {
+  background: rgba(255,255,255,0.065);
+  border: 1px solid var(--glass-border);
+}
+
+.table-side-panel {
+  width: 376px;
+  max-width: min(92vw, 392px);
+  background:
+    linear-gradient(155deg, rgba(18,27,43,0.9), rgba(18,27,43,0.68)),
+    linear-gradient(35deg, rgba(242,199,110,0.08), rgba(109,231,255,0.035));
+  border-left-color: rgba(242,199,110,0.22);
+  z-index: 850;
+}
+.table-panel-backdrop.show { display: none; }
+.table-side-panel-header {
+  padding: 18px 20px 16px;
+}
+.table-side-panel-header h3 {
+  font-size: 28px;
+  color: var(--gold-light);
+}
+.table-side-panel-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--glass-border);
+}
+.table-side-panel-close:hover {
+  background: rgba(255,255,255,0.13);
+  color: #fff;
+  transform: rotate(90deg);
+}
+.table-side-panel-body {
+  padding: 18px;
+}
+.table-panel-guest-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.075);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+}
+.table-panel-room {
+  height: 58px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #111827;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  box-shadow: 0 12px 26px rgba(242,199,110,0.22);
+}
+.table-panel-name { font-size: 18px; font-weight: 700; color: #fff; }
+.table-panel-sub { margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+.table-panel-metrics {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+.table-panel-metric {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.065);
+  border: 1px solid var(--glass-border);
+}
+.table-panel-metric span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.table-panel-metric b {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+#sidePanelAssignForm,
+#sidePanelOccForm,
+.table-side-panel .waiter-block {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.055);
+  border: 1px solid var(--glass-border);
+}
+.table-side-panel .waiter-block { margin-top: 14px; }
+
+.queue-drag-ghost {
+  position: fixed !important;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.92;
+  transform: scale(1.03) rotate(1deg);
+  box-shadow: 0 26px 70px rgba(0,0,0,0.45), 0 0 0 1px rgba(242,199,110,0.25);
+}
+.queue-touch-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.fab-main {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  box-shadow: 0 16px 36px rgba(242,199,110,0.26), 0 0 0 1px rgba(255,255,255,0.18);
+}
+.fab-item {
+  background: rgba(12,19,31,0.82);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+.bottom-nav {
+  height: calc(64px + env(safe-area-inset-bottom, 0));
+}
+.bottom-nav-btn.active {
+  color: var(--gold-light);
+  text-shadow: 0 0 16px var(--gold-glow);
+}
+
+@media (max-width: 768px) {
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0)); }
+  .top-bar { min-height: 54px; }
+  .admin-header { height: 58px; padding: 0 10px; }
+  .stats-bar { height: 46px; }
+  .sidebar {
+    width: min(90vw, 340px);
+    max-width: 340px;
+    border-radius: 0 24px 24px 0;
+  }
+  .modal {
+    width: calc(100% - 22px);
+    max-height: calc(100vh - 26px - env(safe-area-inset-bottom, 0));
+    padding: 20px;
+    border-radius: 24px;
+  }
+  .table {
+    width: 104px;
+    height: 104px;
+  }
+  .guest-card-swipe {
+    min-height: 102px;
+    padding: 14px;
+  }
+  .fab-container {
+    right: 16px;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0));
+  }
+  .map-hint {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0));
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+    text-align: center;
+  }
+  .table-side-panel,
+  .table-panel-backdrop {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+</style>
+
+<script>
+// ⚠️ HTTPS CHECK: Service Worker и Push-уведомления требуют HTTPS
+if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+  console.warn('[Security] Приложение запущено по HTTP. Для работы PWA и push-уведомлений требуется HTTPS.');
+}
+
+</script>
+<script>
+  // SW update check is handled by the PWA block below — no extra reg.update() needed here
+</script>
+</head>
+<body>
+
+<!-- SW UPDATE BANNER -->
+<div id="swUpdateBanner" onclick="applySwUpdate()">
+  🔄 Доступна новая версия приложения — нажмите чтобы обновить
+</div>
+
+<!-- ЭКРАН ВХОДА ДЛЯ АДМИНИСТРАТОРА -->
+<div id="loginScreen" style="position:fixed; top:0; left:0; right:0; bottom:0; background:#0D1B2A; z-index:10000; display:flex; align-items:center; justify-content:center;">
+  <div style="background:#152234; padding:32px; border-radius:24px; width:320px; text-align:center; border:1px solid rgba(255,255,255,0.08);">
+    <h2 style="color:#C9963A; margin-bottom:24px;">👑 Три Короны</h2>
+    <input type="email" id="loginEmail" placeholder="Email" style="width:100%; margin-bottom:12px; padding:12px; border-radius:10px; background:#1C2E44; border:1px solid rgba(255,255,255,0.08); color:white;">
+    <input type="password" id="loginPassword" placeholder="Пароль" style="width:100%; margin-bottom:20px; padding:12px; border-radius:10px; background:#1C2E44; border:1px solid rgba(255,255,255,0.08); color:white;">
+    <button id="loginBtn" style="width:100%; padding:12px; background:#C9963A; border:none; border-radius:10px; color:#0D1B2A; font-weight:600; cursor:pointer;">Войти</button>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="brand">
+    <span class="brand-crowns">👑👑👑</span>
+    <span class="brand-name">Три Короны</span>
+  </div>
+  <div class="role-tabs">
+    <div class="brand" style="border-right:none; border-left:1px solid var(--glass-border);">
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Переключить тему">🌙</button>
+    </div>
+    <button class="role-tab active" id="roleAdmin"  onclick="switchRole('admin')">
+      <span class="tab-icon">👑</span> Администратор
+    </button>
+    <button class="role-tab" id="roleWaiter" onclick="switchRole('waiter')">
+      <span class="tab-icon">👔</span> Официант
+    </button>
+    <button class="role-tab" id="roleChef" onclick="switchRole('chef')">
+      <span class="tab-icon">👨‍🍳</span> Повар
+    </button>
+  </div>
+  <!-- ИСПРАВЛЕНИЕ 1: Omnisearch перенесён внутрь top-bar, убран дублирующийся -->
+  <div class="omnisearch-wrapper" id="omnisearchWrapper">
+    <span class="omnisearch-icon">🔍</span>
+    <input type="text" class="omnisearch-input" id="omnisearchInput" placeholder="Поиск по гостям и столам...">
+    <div class="omnisearch-results" id="omnisearchResults"></div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-chip">
+    <span class="icon">☕</span>
+    <span class="label">Завтрак</span>
+    <span class="val" id="countB">0в + 0д</span>
+  </div>
+  <div class="stat-chip">
+    <span class="icon">🍲</span>
+    <span class="label">Обед</span>
+    <span class="val" id="countL">0в + 0д</span>
+  </div>
+  <div class="stat-chip">
+    <span class="icon">🍽️</span>
+    <span class="label">Ужин</span>
+    <span class="val" id="countD">0в + 0д</span>
+  </div>
+  <div class="stat-chip checkout-chip" onclick="showCheckoutsToday()">
+    <span class="icon">🚪</span>
+    <span class="label">Выезд</span>
+    <span class="val checkout" id="countCheckout">0</span>
+  </div>
+  <div class="stats-spacer"></div>
+  <div class="stat-chip pending">
+    <span class="icon">🚶</span>
+    <span class="label">В пути</span>
+    <span class="val" id="countPending">0</span>
+  </div>
+</div>
+
+<!-- ADMIN HEADER -->
+<div class="admin-header" id="adminHeader">
+  <div class="zone-tabs">
+    <button class="zone-tab active" onclick="switchZone('main', event)">Зал</button>
+    <button class="zone-tab" onclick="switchZone('big_terrace', event)">Б. Терраса</button>
+    <button class="zone-tab" onclick="switchZone('small_terrace', event)">М. Терраса</button>
+  </div>
+  <div class="header-actions">
+    <button class="hbtn mobile-queue-btn" id="mobileQueueToggleBtn">📋 <span>Очередь</span></button>
+    <button class="hbtn checkout-btn" onclick="showCheckoutsToday()">🚪 <span>Выезды</span></button>
+    <button class="hbtn pending-btn" onclick="showPendingGuests()">🚶 <span>В пути</span></button>
+    <button class="hbtn" onclick="showAllGuests()">📋 <span>Все</span></button>
+    <button class="hbtn" onclick="showAuditLog()">📋 <span>Журнал</span></button>
+    <button class="hbtn" onclick="showArchive()">📜 <span>Архив</span></button>
+    <button class="hbtn gold" onclick="addNewTable()">+ <span>Стол</span></button>
+    <button class="hbtn success" onclick="openGuestModal()">+ <span>Гость</span></button>
+    <button class="hbtn" id="notifBtn" onclick="requestPushPermission()" title="Push-уведомления">
+      🔔 <span>Уведомления</span>
+    </button>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div id="adminLayout" style="display:flex; flex:1; overflow:hidden;">
+  <div class="sidebar" id="queueSidebar">
+    <div class="sidebar-header">
+      📋 Очередь
+      <button class="close-sidebar-btn" id="closeQueueBtn">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <div id="unassignedList"></div>
+    </div>
+  </div>
+  <div class="queue-backdrop" id="queueBackdrop"></div>
+  <div class="map-area" id="mapArea">
+    <div id="mapCanvas"></div>
+  </div>
+</div>
+
+<!-- CHEF PANEL -->
+<div id="chefPanel">
+  <div class="ptr-indicator" id="chefPtrIndicator">
+    <div class="ptr-spinner"></div>
+    <span class="ptr-text">Потяните, чтобы обновить</span>
+  </div>
+  <div class="chef-header">
+    <div class="chef-title-text">Панель повара</div>
+    <div class="chef-date-text" id="chefDate"></div>
+  </div>
+  <div class="chef-grid">
+    <div class="chef-card breakfast">
+      <div class="chef-emoji">☕</div>
+      <div class="chef-meal-name">Завтрак</div>
+      <div class="chef-num" id="chefB_total">0</div>
+      <div class="chef-sub" id="chefB_sub">0в + 0д</div>
+    </div>
+    <div class="chef-card lunch">
+      <div class="chef-emoji">🍲</div>
+      <div class="chef-meal-name">Обед</div>
+      <div class="chef-num" id="chefL_total">0</div>
+      <div class="chef-sub" id="chefL_sub">0в + 0д</div>
+    </div>
+    <div class="chef-card dinner">
+      <div class="chef-emoji">🍽️</div>
+      <div class="chef-meal-name">Ужин</div>
+      <div class="chef-num" id="chefD_total">0</div>
+      <div class="chef-sub" id="chefD_sub">0в + 0д</div>
+    </div>
+  </div>
+  <div class="chef-section-title">Гости на сегодня</div>
+  <div class="chef-breakdown" id="chefBreakdown"></div>
+  <div class="chef-section-title" style="margin-top:20px;">Выезжают сегодня</div>
+  <div class="chef-breakdown" id="chefCheckouts"></div>
+</div>
+
+<!-- WAITER PANEL -->
+<div id="waiterPanel">
+  <div class="ptr-indicator" id="waiterPtrIndicator">
+    <div class="ptr-spinner"></div>
+    <span class="ptr-text">Потяните, чтобы обновить</span>
+  </div>
+  <div class="waiter-select-bar">
+    <label>Официант:</label>
+    <select id="waiterSelector" onchange="renderWaiterPanel()" style="margin-top:0; flex:1;">
+      <option value="">— Выбрать —</option>
+      
+      <option value="Сергей">Сергей</option>
+      <option value="Нурлан">Нурлан</option>
+    </select>
+  </div>
+  <div id="waiterTablesList"></div>
+</div>
+
+<div class="map-hint" id="mapHint">Удерживай стол 0.4с чтобы переместить · Листай карту рукой</div>
+<div id="toast"></div>
+<div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+<!-- PWA INSTALL BANNER -->
+<div id="installBanner">
+  <span class="install-icon">👑</span>
+  <div class="install-text">
+    <div class="install-title">Установить приложение</div>
+    <div class="install-sub">Добавить Три Короны на главный экран</div>
+  </div>
+  <button class="install-accept" onclick="installApp()">Установить</button>
+  <button class="install-close"  onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- FAB -->
+<div class="fab-container" id="fabContainer">
+  <div class="fab-backdrop" id="fabBackdrop"></div>
+  <div class="fab-menu" id="fabMenu">
+    <div class="fab-item" id="fabAddGuest">
+      <span class="fab-icon">👤</span>
+      <span>Добавить гостя</span>
+    </div>
+    <div class="fab-item" id="fabAddTable">
+      <span class="fab-icon">🪑</span>
+      <span>Добавить стол</span>
+    </div>
+    <div class="fab-item" id="fabCheckouts">
+      <span class="fab-icon">🚪</span>
+      <span>Выезды сегодня</span>
+    </div>
+  </div>
+  <button class="fab-main" id="fabMainBtn">+</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-btn active" data-role="admin">
+    <span class="bn-icon">👑</span>
+    <span>Админ</span>
+  </button>
+  <button class="bottom-nav-btn" data-role="waiter">
+    <span class="bn-icon">👔</span>
+    <span>Официант</span>
+  </button>
+  <button class="bottom-nav-btn" data-role="chef">
+    <span class="bn-icon">👨‍🍳</span>
+    <span>Повар</span>
+  </button>
+</div>
+
+<!-- GUEST MODAL -->
+<div class="modal" id="guestModal">
+  <h3>Данные гостя</h3>
+
+  <div class="form-block">
+    <div class="form-block-legend"><span>👤</span> Личные данные</div>
+    <div class="form-block-body">
+      <label class="field-label">Комната</label>
+      <input type="text" id="gRoom" placeholder="101">
+      <label class="field-label">Имя гостя</label>
+      <input type="text" id="gName" placeholder="Имя гостя">
+      <label class="field-label">Состав (взрослые / дети)</label>
+      <div class="input-row">
+        <input type="number" id="gAdults" placeholder="Взрослые" value="1" min="0">
+        <input type="number" id="gKids"   placeholder="Дети"     value="0" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-block">
+    <div class="form-block-legend"><span>📅</span> Детали заезда</div>
+    <div class="form-block-body">
+      <label class="field-label">Дата выезда</label>
+      <input type="date" id="gOut" onchange="generateCalendar(true)">
+      <label class="field-label">Время выезда</label>
+      <select id="gOutTime" onchange="generateCalendar(true)">
+        <option value="B">После завтрака</option>
+        <option value="L">После обеда</option>
+        <option value="D">После ужина</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-block">
+    <div class="form-block-legend"><span>🍽️</span> Питание и пожелания</div>
+    <div class="form-block-body">
+      <label class="field-label">Тип питания</label>
+      <select id="gMealPlan" onchange="generateCalendar(true)">
+        <option value="B">Только завтрак</option>
+        <option value="BL">Завтрак + обед</option>
+        <option value="FULL">Полное питание</option>
+      </select>
+      <div class="muted" style="margin-top:6px;">На дате выезда питание ограничивается автоматически</div>
+      <label class="field-label">📝 Заметки (аллергии, пожелания)</label>
+      <textarea id="gNotes" placeholder="Например: аллергия на орехи, VIP..."></textarea>
+    </div>
+  </div>
+
+  <div id="calendarContainer" class="calendar-grid"></div>
+
+  <div id="dayEditor" class="meal-day-editor">
+    <div class="meal-day-title" id="selectedDayTitle"></div>
+    <div class="meal-day-current" id="selectedDayInfo"></div>
+    <div class="meal-quick-btns">
+      <button class="q-btn" onclick="setSelectedDayPlan('B')">Только завтрак</button>
+      <button class="q-btn" onclick="setSelectedDayPlan('BL')">Завтрак + обед</button>
+      <button class="q-btn" onclick="setSelectedDayPlan('FULL')">Полное питание</button>
+      <button class="q-btn" onclick="clearSelectedDayMeals()">Убрать всё</button>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealB" onclick="setMealEnabledInSelectedDay('B')">Завтрак</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayBA" min="0" oninput="updateSelectedMealCount('B','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayBK" min="0" oninput="updateSelectedMealCount('B','K',this.value)"></div>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealL" onclick="setMealEnabledInSelectedDay('L')">Обед</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayLA" min="0" oninput="updateSelectedMealCount('L','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayLK" min="0" oninput="updateSelectedMealCount('L','K',this.value)"></div>
+    </div>
+    <div class="meal-row">
+      <button id="btnMealD" onclick="setMealEnabledInSelectedDay('D')">Ужин</button>
+      <div class="count-wrap"><label>Взрослые</label><input type="number" id="dayDA" min="0" oninput="updateSelectedMealCount('D','A',this.value)"></div>
+      <div class="count-wrap"><label>Дети</label><input type="number" id="dayDK" min="0" oninput="updateSelectedMealCount('D','K',this.value)"></div>
+    </div>
+  </div>
+
+  <div class="meal-quick-btns">
+    <button class="q-btn" onclick="bulkMeal('L')">+ Обед на все дни</button>
+    <button class="q-btn" onclick="bulkMeal('full')">З+О+У на все дни</button>
+  </div>
+
+  <button class="btn btn-success" onclick="saveGuest()">Сохранить</button>
+  <button class="btn btn-ghost" onclick="closeModal('guestModal')">Закрыть</button>
+</div>
+
+<!-- TABLE MODAL -->
+<div class="modal" id="tableModal">
+  <h3 id="tTitle">Стол №</h3>
+  <div id="mealAlert" class="info-box" style="display:none">⚡ <b>Изменено!</b> <span id="mDiff"></span></div>
+  <div id="assignForm">
+    <select id="selGuest"></select>
+    <button class="btn btn-success" onclick="assignToTable()">Посадить за стол</button>
+  </div>
+  <div id="occForm" style="display:none">
+    <div id="occData"></div>
+    <div id="occNotes" class="note-preview" style="display:none"></div>
+    <button id="arrBtn" class="btn" style="background:var(--pending-dim);border:1px solid var(--pending);color:var(--pending);" onclick="confirmArrival()">✅ Подтвердить прибытие</button>
+    <button class="btn btn-ghost" style="border-color:rgba(255,90,90,0.3);color:var(--danger);" onclick="freeTable()">Освободить стол</button>
+  </div>
+  <div class="waiter-block">
+    <label>👔 Официант за этим столом</label>
+    <select id="tblWaiterSel">
+      <option value="">— Не назначен —</option>
+      <option value="Сергей">Сергей</option>
+      <option value="Нурлан">Нурлан</option>
+    </select>
+    <button class="btn btn-success" onclick="saveWaiter()" style="margin-top:8px;">💾 Сохранить официанта</button>
+  </div>
+  <button class="btn-delete-table" onclick="deleteCurrentTable()">🗑️ Удалить этот стол</button>
+  <button class="btn btn-ghost" style="margin-top:8px;" onclick="closeAllModals()">Закрыть</button>
+</div>
+
+<!-- LIST MODAL -->
+<div class="modal" id="listModal">
+  <h3 id="listTitle"></h3>
+  <!-- ИСПРАВЛЕНИЕ 2: убран дублирующийся #listSearch, оставлен один -->
+  <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+    <button class="export-csv-btn" id="exportCsvBtn">📥 Экспорт CSV</button>
+    <input id="listSearch" class="search-box" type="text" placeholder="Поиск..."
+           style="display:none; margin-bottom:0; flex:1;" oninput="renderCurrentList()">
+  </div>
+  <div class="bulk-actions-bar" id="bulkActionsBar">
+    <button class="btn btn-danger" id="bulkArchiveBtn" style="width:auto; padding:8px 14px;">🗃️ Архивировать выбранных</button>
+    <button class="btn btn-gold"  id="bulkMealBLBtn"  style="width:auto; padding:8px 14px;">🍽️ Сменить на З+О</button>
+    <span class="muted" style="margin-left:8px;" id="bulkCount">Выбрано: 0</span>
+  </div>
+  <div id="listContent"></div>
+  <div id="archiveClearRow" style="display:none; margin-top:10px;">
+    <button class="btn btn-danger" onclick="confirmClearArchive()">🗑️ Очистить весь архив</button>
+    <div class="muted" style="margin-top:6px; text-align:center;">Записи старше 7 дней удаляются автоматически</div>
+  </div>
+  <button class="btn btn-ghost" onclick="closeAllModals()">Закрыть</button>
+</div>
+
+<!-- ARCHIVE DETAIL MODAL -->
+<div class="modal" id="archiveDetailModal">
+  <h3>Архивная запись</h3>
+  <div id="archiveDetailContent"></div>
+  <button class="btn btn-ghost" onclick="closeModal('archiveDetailModal')">Закрыть</button>
+</div>
+
+<!-- SHORTCUTS MODAL -->
+<div class="modal" id="shortcutsModal">
+  <h3>⌨️ Горячие клавиши</h3>
+  <table class="shortcuts-table">
+    <tr><td><kbd>N</kbd></td><td>Новый гость</td></tr>
+    <tr><td><kbd>T</kbd></td><td>Новый стол</td></tr>
+    <tr><td><kbd>1</kbd></td><td>Зал</td></tr>
+    <tr><td><kbd>2</kbd></td><td>Б. Терраса</td></tr>
+    <tr><td><kbd>3</kbd></td><td>М. Терраса</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Закрыть окно</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>?</kbd></td><td>Эта подсказка</td></tr>
+  </table>
+  <button class="btn btn-ghost" onclick="closeModal('shortcutsModal')">Закрыть</button>
+</div>
+
+<!-- AUDIT MODAL -->
+<div class="modal" id="auditModal">
+  <h3>📋 Журнал действий</h3>
+  <div class="audit-list" id="auditList"></div>
+  <button class="btn btn-ghost audit-clear-btn" onclick="clearOldAuditLogs()">🗑️ Очистить старше 30 дней</button>
+  <button class="btn btn-ghost" style="margin-top:6px;" onclick="closeModal('auditModal')">Закрыть</button>
+</div>
+
+<!-- CUSTOM PROMPT -->
+<div class="overlay" id="promptOverlay"></div>
+<div class="modal" id="promptModal">
+  <h3 id="promptTitle">Введите значение</h3>
+  <p id="promptSubtitle" style="font-size:13px;color:var(--text-muted);margin:-10px 0 14px;"></p>
+  <input type="text" id="promptInput" style="font-size:15px;">
+  <div style="display:flex;gap:8px;margin-top:14px;">
+    <button class="cpbtn cpbtn-cancel" id="promptCancel">Отмена</button>
+    <button class="cpbtn cpbtn-ok"     id="promptOk">OK</button>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="context-menu" id="tableContextMenu">
+  <div class="context-menu-item" data-action="assign">
+    <span class="menu-icon">🪑</span> Посадить гостя
+  </div>
+  <div class="context-menu-item" data-action="free">
+    <span class="menu-icon">🚪</span> Освободить стол
+  </div>
+  <div class="context-menu-divider"></div>
+  <div class="context-menu-item" data-action="edit">
+    <span class="menu-icon">✏️</span> Редактировать гостя
+  </div>
+  <div class="context-menu-item" data-action="waiter">
+    <span class="menu-icon">👔</span> Назначить официанта
+  </div>
+</div>
+
+<!-- TABLE SIDE PANEL -->
+<div class="table-panel-backdrop" id="tablePanelBackdrop"></div>
+<div class="table-side-panel" id="tableSidePanel">
+  <div class="table-side-panel-header">
+    <h3 id="sidePanelTitle">Стол №</h3>
+    <button class="table-side-panel-close" id="sidePanelCloseBtn">✕</button>
+  </div>
+  <div class="table-side-panel-body" id="sidePanelBody">
+    <div id="sidePanelAlert" class="info-box" style="display:none">⚡ <b>Изменено!</b> <span id="sidePanelDiff"></span></div>
+    <div id="sidePanelAssignForm">
+      <select id="sidePanelSelGuest"></select>
+      <button class="btn btn-success" onclick="assignToTableFromSide()">Посадить за стол</button>
+    </div>
+    <div id="sidePanelOccForm" style="display:none">
+      <div id="sidePanelOccData"></div>
+      <div id="sidePanelOccNotes" class="note-preview" style="display:none"></div>
+      <button id="sidePanelArrBtn" class="btn" style="background:var(--pending-dim);border:1px solid var(--pending);color:var(--pending);" onclick="confirmArrivalFromSide()">✅ Подтвердить прибытие</button>
+      <button class="btn btn-ghost" style="border-color:rgba(255,90,90,0.3);color:var(--danger);" onclick="freeTableFromSide()">Освободить стол</button>
+    </div>
+    <div class="waiter-block">
+      <label>👔 Официант за этим столом</label>
+      <select id="sidePanelWaiterSel">
+        
+        <option value="Сергей">Сергей</option>
+        <option value="Нурлан">Нурлан</option>
+      </select>
+      <button class="btn btn-success" onclick="saveWaiterFromSide()" style="margin-top:8px;">💾 Сохранить официанта</button>
+    </div>
+    <button class="btn-delete-table" onclick="deleteTableFromSide()">🗑️ Удалить этот стол</button>
+  </div>
+</div>
+
+<script type="module">
+const API_BASE = '';
+
+async function getCsrfToken() {
+  const cached = sessionStorage.getItem('tri-korony-csrf');
+  if (cached) return cached;
+  const res = await fetch('/api/csrf');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'CSRF fetch failed');
+  sessionStorage.setItem('tri-korony-csrf', data.csrfToken);
+  return data.csrfToken;
+}
+
+async function api(path, options = {}) {
+  const token = sessionStorage.getItem('tri-korony-token');
+  const csrfToken = await getCsrfToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrfToken,
+    ...(options.headers || {})
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include'
+  });
+  const contentType = res.headers.get('content-type') || '';
+  const body = contentType.includes('application/json') ? await res.json() : await res.text();
+  if (!res.ok) throw new Error(body?.error || body || 'Request failed');
+  return body;
+}
+
+function collection(_db, name) { return { kind: 'collection', name }; }
+function doc(_db, name, id) { return { kind: 'doc', name, id }; }
+async function addDoc(ref, data) {
+  const res = await api(`/api/collection/${ref.name}`, { method: 'POST', body: JSON.stringify(data) });
+  return { id: res.id };
+}
+async function updateDoc(ref, data) {
+  await api(`/api/collection/${ref.name}/${ref.id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+async function deleteDoc(ref) {
+  await api(`/api/collection/${ref.name}/${ref.id}`, { method: 'DELETE' });
+}
+async function getDocs(ref) {
+  const res = await api(`/api/collection/${ref.name}`);
+  return { docs: (res.items || []).map(item => ({ id: item.id, data: () => item })) };
+}
+function onSnapshot(ref, next, onError) {
+  api(`/api/collection/${ref.name}`)
+    .then((res) => {
+      const docs = (res.items || []).map(item => ({ id: item.id, data: () => item }));
+      next({
+        forEach: (cb) => docs.forEach((doc) => cb({ id: doc.id, data: () => doc.data() })),
+        size: docs.length
+      });
+    })
+    .catch((err) => onError && onError(err));
+  return () => {};
+}
+const query = (ref) => ref;
+const where = () => ({ });
+const orderBy = () => ({ });
+const limit = () => ({ });
+const writeBatch = () => ({ commit: async () => api('/api/batch', { method: 'POST', body: JSON.stringify({ deletes: [] }) }) });
+
+// ─── SANITIZE (XSS protection) ───
+function sanitize(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function sanitizeInput(value) {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .trim();
+}
+
+function validateGuestInput(data) {
+  const room = String(data.room || '').trim();
+  const name = String(data.name || '').trim();
+  const adults = String(data.adults ?? '0').trim();
+  const kids = String(data.kids ?? '0').trim();
+  const notes = String(data.notes || '').trim();
+
+  if (!/^\d{1,10}$/.test(room)) throw new Error('Комната должна содержать только цифры (1-10 знаков).');
+  if (!/^[\p{L}\s-]{2,50}$/u.test(name)) throw new Error('Имя должно содержать 2-50 букв, пробелов или дефисов.');
+  if (!/^(0|[1-9]\d?)$/.test(adults) || !/^(0|[1-9]\d?)$/.test(kids)) throw new Error('Взрослые и дети должны быть целыми числами от 0 до 10.');
+  if (/<[^>]+>/i.test(name) || /<[^>]+>/i.test(notes) || /<[^>]+>/i.test(room)) throw new Error('HTML-теги запрещены в полях ввода.');
+
+  return {
+    ...data,
+    room: sanitizeInput(room),
+    name: sanitizeInput(name),
+    notes: sanitizeInput(notes),
+    adults: Number.parseInt(adults, 10),
+    kids: Number.parseInt(kids, 10)
+  };
+}
+
+function lockSubmitButton(button, label) {
+  if (!button) return null;
+  const oldText = button.textContent || button.innerText || label;
+  button.disabled = true;
+  button.dataset.originalText = oldText;
+  button.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>' + label;
+  return oldText;
+}
+
+function unlockSubmitButton(button) {
+  if (!button) return;
+  button.disabled = false;
+  button.textContent = button.dataset.originalText || button.textContent;
+}
+
+// ─── AUTH GUARD ───
+// Приложение скрыто до аутентификации, чтобы данные не утекали
+function showApp() {
+  const appRoot = document.getElementById('appRoot');
+  if (appRoot) appRoot.style.display = '';
+}
+
+function hideApp() {
+  const appRoot = document.getElementById('appRoot');
+  if (appRoot) appRoot.style.display = 'none';
+}
+
+// ─── AUDIT LOG ───
+async function logAction(action, details = '', targetId = null) {
+  try {
+    await addDoc(collection(null, 'audit_logs'), {
+      action, details, targetId: targetId || null, timestamp: Date.now()
+    });
+  } catch (err) {
+    console.warn('[Audit] Ошибка записи лога:', err);
+  }
+}
+
+// ─── INDEXEDDB OFFLINE ───
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('TriKoronyOffline', 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('guests')) db.createObjectStore('guests', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('tables')) db.createObjectStore('tables', { keyPath: 'id' });
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror  = (e) => reject(e.target.error);
+  });
+}
+
+async function saveToOfflineStore(storeName, items) {
+  try {
+    const db = await openOfflineDB();
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    await new Promise((res, rej) => { const r = store.clear(); r.onsuccess=res; r.onerror=rej; });
+    for (const item of items) store.put(item);
+    await new Promise((res, rej) => { tx.oncomplete=res; tx.onerror=rej; });
+  } catch (err) {
+    console.warn('[Offline] Ошибка сохранения:', err);
+  }
+}
+
+async function loadFromOfflineStore(storeName) {
+  try {
+    const db = await openOfflineDB();
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.getAll();
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror   = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('[Offline] Ошибка загрузки:', err);
+    return [];
+  }
+}
+
+// ─── STATE ───
+let currentZone      = 'main';
+let selectedTableId  = null;
+let editingGuestId   = null;
+let selectedDayIndex = null;
+let allGuests        = [];
+let allTables        = [];
+let guestCalendar    = [];
+let currentListMode  = '';
+let currentListItems = [];
+let currentRole      = 'admin';
+let lastTapX         = 0;
+let lastTapY         = 0;
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const APP_ICON_SRC = '/icon.svg';
+const tableNodeMap = new Map();
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function debounceFrame(fn) {
+  let frame = 0;
+  let lastArgs = null;
+  return (...args) => {
+    lastArgs = args;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      fn(...lastArgs);
+    });
+  };
+}
+
+const mealTemplates = {
+  B:    { B: true,  L: false, D: false },
+  BL:   { B: true,  L: true,  D: false },
+  FULL: { B: true,  L: true,  D: true  },
+  NONE: { B: false, L: false, D: false }
+};
+
+const checkoutLimits = {
+  B: { B: true, L: false, D: false },
+  L: { B: true, L: true,  D: false },
+  D: { B: true, L: true,  D: true  }
+};
+
+const formatDateLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
+
+const parseLocalDate = (str) => {
+  if (!str) return null;
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+};
+
+const getTodayStr  = () => formatDateLocal(new Date());
+const shortDate    = (str) => { if (!str) return ''; const [,m,d] = str.split('-'); return `${d}.${m}`; };
+const toInt        = (v)   => Math.max(0, parseInt(v)||0);
+
+const normalizeOutTime = (v) => {
+  if (v==='B'||v==='L'||v==='D') return v;
+  if (v==='Завтрака'||v==='После завтрака') return 'B';
+  if (v==='Обеда'   ||v==='После обеда')    return 'L';
+  if (v==='Ужина'   ||v==='После ужина')     return 'D';
+  return 'B';
+};
+
+const outTimeLabel  = (v) => { const x=normalizeOutTime(v); if(x==='B') return 'После завтрака'; if(x==='L') return 'После обеда'; return 'После ужина'; };
+const mealPlanLabel = (v) => { if(v==='B') return 'Только завтрак'; if(v==='BL') return 'Завтрак + обед'; if(v==='FULL') return 'Полное питание'; return 'Индивидуально'; };
+const cloneState    = (s) => ({ B: !!s.B, L: !!s.L, D: !!s.D });
+
+const getCurrentBaseCounts = () => ({
+  adults: toInt(document.getElementById('gAdults').value),
+  kids:   toInt(document.getElementById('gKids').value)
+});
+
+const makeDayObject = (date,B,L,D,BA,BK,LA,LK,DA,DK) => ({ date,B,L,D,BA,BK,LA,LK,DA,DK });
+
+const sanitizeDay = (day) => ({
+  date: day.date,
+  B:!!day.B, L:!!day.L, D:!!day.D,
+  BA: !!day.B ? toInt(day.BA) : 0,
+  BK: !!day.B ? toInt(day.BK) : 0,
+  LA: !!day.L ? toInt(day.LA) : 0,
+  LK: !!day.L ? toInt(day.LK) : 0,
+  DA: !!day.D ? toInt(day.DA) : 0,
+  DK: !!day.D ? toInt(day.DK) : 0
+});
+
+const isCheckoutDate = (dateStr) => document.getElementById('gOut').value === dateStr;
+const isMealLocked   = (dateStr, type) => {
+  if (!isCheckoutDate(dateStr)) return false;
+  return !checkoutLimits[normalizeOutTime(document.getElementById('gOutTime').value)][type];
+};
+
+const fillCountsForEnabled = (day) => {
+  const base = getCurrentBaseCounts();
+  if (day.B && day.BA===0 && day.BK===0) { day.BA=base.adults; day.BK=base.kids; }
+  if (day.L && day.LA===0 && day.LK===0) { day.LA=base.adults; day.LK=base.kids; }
+  if (day.D && day.DA===0 && day.DK===0) { day.DA=base.adults; day.DK=base.kids; }
+  return day;
+};
+
+const enforceCheckoutLimit = (day) => {
+  let r = sanitizeDay(day);
+  if (isCheckoutDate(r.date)) {
+    const limit = checkoutLimits[normalizeOutTime(document.getElementById('gOutTime').value)];
+    if (!limit.B) { r.B=false; r.BA=0; r.BK=0; }
+    if (!limit.L) { r.L=false; r.LA=0; r.LK=0; }
+    if (!limit.D) { r.D=false; r.DA=0; r.DK=0; }
+  }
+  return sanitizeDay(r);
+};
+
+const getTemplateForPlan = (plan) => cloneState(mealTemplates[plan]||mealTemplates.B);
+
+const buildDefaultDay = (dateStr) => {
+  const plan = document.getElementById('gMealPlan').value;
+  const tpl  = getTemplateForPlan(plan);
+  const base = getCurrentBaseCounts();
+  return enforceCheckoutLimit(makeDayObject(
+    dateStr,
+    tpl.B,tpl.L,tpl.D,
+    tpl.B?base.adults:0, tpl.B?base.kids:0,
+    tpl.L?base.adults:0, tpl.L?base.kids:0,
+    tpl.D?base.adults:0, tpl.D?base.kids:0
+  ));
+};
+
+const normalizeCalendarDay = (day, guestAdults=0, guestKids=0) => {
+  const bA = toInt(guestAdults), bK = toInt(guestKids);
+  if ('BA' in day||'BK' in day||'LA' in day||'LK' in day||'DA' in day||'DK' in day) {
+    return sanitizeDay({ date:day.date, B:!!day.B, L:!!day.L, D:!!day.D,
+      BA:day.BA, BK:day.BK, LA:day.LA, LK:day.LK, DA:day.DA, DK:day.DK });
+  }
+  const B=!!day.B, L=!!day.L, D=!!day.D;
+  return sanitizeDay({ date:day.date, B,L,D,
+    BA:B?bA:0, BK:B?bK:0, LA:L?bA:0, LK:L?bK:0, DA:D?bA:0, DK:D?bK:0 });
+};
+
+const describeDayWithCounts = (day) => {
+  if (!day) return 'Без питания';
+  const p=[];
+  if (day.B) p.push(`З ${day.BA}в+${day.BK}д`);
+  if (day.L) p.push(`О ${day.LA}в+${day.LK}д`);
+  if (day.D) p.push(`У ${day.DA}в+${day.DK}д`);
+  return p.length ? p.join(' | ') : 'Без питания';
+};
+
+const getMealSummaryForDay = (guest, dateStr) => {
+  const fA = toInt(guest?.adults), fK = toInt(guest?.kids);
+  const raw = guest?.calendar?.find(c => c.date===dateStr);
+  const day = raw ? normalizeCalendarDay(raw, fA, fK) : null;
+  if (!day) return { short:'—', full:'Нет питания', portions:`${fA}в + ${fK}д` };
+  const shortParts=[], fullParts=[];
+  if (day.B) { shortParts.push(`З ${day.BA}в+${day.BK}д`); fullParts.push(`Завтрак ${day.BA}в + ${day.BK}д`); }
+  if (day.L) { shortParts.push(`О ${day.LA}в+${day.LK}д`); fullParts.push(`Обед ${day.LA}в + ${day.LK}д`);   }
+  if (day.D) { shortParts.push(`У ${day.DA}в+${day.DK}д`); fullParts.push(`Ужин ${day.DA}в + ${day.DK}д`);   }
+  return {
+    short:   shortParts.length ? shortParts.join(' | ') : 'Нет питания',
+    full:    fullParts.length  ? fullParts.join(', ')   : 'Нет питания',
+    portions:`${fA}в + ${fK}д`
+  };
+};
+
+const buildGuestDiff = (oldGuest, newGuest) => {
+  if (!oldGuest) return 'Добавлен новый гость';
+  const changes = [];
+  if (`${oldGuest.adults}`!==`${newGuest.adults}` || `${oldGuest.kids}`!==`${newGuest.kids}`)
+    changes.push(`Всего гостей: ${newGuest.adults}в + ${newGuest.kids}д`);
+  if ((oldGuest.out||'')!==(newGuest.out||'') || normalizeOutTime(oldGuest.outTime)!==normalizeOutTime(newGuest.outTime))
+    changes.push(`Выезд: ${shortDate(newGuest.out)} (${outTimeLabel(newGuest.outTime)})`);
+  if ((oldGuest.mealPlan||'B')!==(newGuest.mealPlan||'B'))
+    changes.push(`Тариф: ${mealPlanLabel(newGuest.mealPlan)}`);
+  if ((oldGuest.notes||'')!==(newGuest.notes||''))
+    changes.push('Заметки обновлены');
+  const dateSet = new Set([
+    ...(oldGuest.calendar||[]).map(x=>x.date),
+    ...(newGuest.calendar||[]).map(x=>x.date)
+  ]);
+  const dateChanges=[];
+  [...dateSet].sort().forEach(date => {
+    const o = normalizeCalendarDay((oldGuest.calendar||[]).find(x=>x.date===date)||{date}, oldGuest.adults, oldGuest.kids);
+    const n = normalizeCalendarDay((newGuest.calendar||[]).find(x=>x.date===date)||{date}, newGuest.adults, newGuest.kids);
+    if (describeDayWithCounts(o) !== describeDayWithCounts(n))
+      dateChanges.push(`${shortDate(date)}: ${describeDayWithCounts(o)} → ${describeDayWithCounts(n)}`);
+  });
+  if (dateChanges.length) {
+    changes.push(...dateChanges.slice(0,4));
+    if (dateChanges.length>4) changes.push(`и ещё ${dateChanges.length-4} дн.`);
+  }
+  return changes.length ? changes.join(' • ') : 'Данные гостя обновлены';
+};
+
+const searchMatches = (item, query) => {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return [item.room, item.name, item.out, outTimeLabel(item.outTime), mealPlanLabel(item.mealPlan||'B'), item.status, item.notes||'']
+    .join(' ').toLowerCase().includes(q);
+};
+
+// ─── TOAST ───
+window.showToast = (msg, duration=2500) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+};
+
+// ─── PROMPT MODAL ───
+function showPromptModal(title, subtitle = '', defaultValue = '') {
+  return new Promise(resolve => {
+    const modal    = document.getElementById('promptModal');
+    const overlay  = document.getElementById('promptOverlay');
+    const input    = document.getElementById('promptInput');
+    const okBtn    = document.getElementById('promptOk');
+    const cancelBtn= document.getElementById('promptCancel');
+    if (!modal || !overlay || !input || !okBtn || !cancelBtn) {
+      resolve((window.prompt(`${title}\n${subtitle}`, defaultValue) || '').trim() || null);
+      return;
+    }
+    // Сначала на всякий случай закрываем FAB-меню и backdrop, чтобы prompt был сверху
+    try {
+      document.getElementById('fabMenu')?.classList.remove('open');
+      document.getElementById('fabBackdrop')?.classList.remove('show');
+    } catch (_) {}
+    document.getElementById('promptTitle').innerText    = title;
+    document.getElementById('promptSubtitle').innerText = subtitle;
+    input.value = defaultValue;
+    // Принудительно поднимаем z-index выше любых fab/queue/backdrop слоёв
+    overlay.style.cssText = 'display:block; z-index:5000;';
+    modal.style.cssText   = 'display:block; z-index:5100;';
+    requestAnimationFrame(() => { try { input.focus(); input.select(); } catch(_){} });
+    const close = (value) => {
+      modal.style.display   = 'none';
+      overlay.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      overlay.removeEventListener('click', onCancel);
+      resolve(value);
+    };
+    const onOk     = () => close(input.value.trim() || null);
+    const onCancel = () => close(null);
+    const onKey    = (e) => { if (e.key==='Enter') { e.preventDefault(); onOk(); } if (e.key==='Escape') { e.preventDefault(); onCancel(); } };
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', onCancel);
+  });
+}
+
+// ─── MOBILE QUEUE ───
+function toggleMobileQueue(open) {
+  const sidebar  = document.getElementById('queueSidebar');
+  const backdrop = document.getElementById('queueBackdrop');
+  if (!sidebar) return;
+  if (open) { sidebar.classList.add('open-drawer'); backdrop?.classList.add('active'); }
+  else       { sidebar.classList.remove('open-drawer'); backdrop?.classList.remove('active'); }
+}
+
+document.getElementById('mobileQueueToggleBtn')?.addEventListener('click', () => toggleMobileQueue(true));
+document.getElementById('closeQueueBtn')?.addEventListener('click', () => toggleMobileQueue(false));
+document.getElementById('queueBackdrop')?.addEventListener('click', () => toggleMobileQueue(false));
+
+// ─── ROLE SWITCH ───
+window.switchRole = (role) => {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
+  const roleEl = document.getElementById('role' + role.charAt(0).toUpperCase() + role.slice(1));
+  if (roleEl) roleEl.classList.add('active');
+
+  const adminHeader = document.getElementById('adminHeader');
+  const adminLayout = document.getElementById('adminLayout');
+  const chefPanel   = document.getElementById('chefPanel');
+  const waiterPanel = document.getElementById('waiterPanel');
+  const statsBar    = document.getElementById('statsBar');
+  const mapHint     = document.getElementById('mapHint');
+
+  adminHeader.style.display = 'none';
+  adminLayout.style.display = 'none';
+  chefPanel.style.display   = 'none';
+  waiterPanel.style.display = 'none';
+  statsBar.style.display    = 'none';
+  mapHint.style.display     = 'none';
+
+  if (role === 'admin') {
+    adminHeader.style.display = 'flex';
+    adminLayout.style.display = 'flex';
+    statsBar.style.display    = 'flex';
+    mapHint.style.display     = 'block';
+  } else if (role === 'chef') {
+    chefPanel.style.display = 'flex';
+    chefPanel.style.flexDirection = 'column';
+    renderChefPanel();
+  } else if (role === 'waiter') {
+    waiterPanel.style.display = 'flex';
+    waiterPanel.style.flexDirection = 'column';
+    statsBar.style.display = 'flex';
+    renderWaiterPanel();
+  }
+
+  if (typeof updateBottomNav === 'function') updateBottomNav(role);
+};
+
+// ─── CHEF PANEL ───
+window.renderChefPanel = () => {
+  const today = getTodayStr();
+  const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
+  const guestRows = [];
+
+  allGuests.forEach(g => {
+    if (g.status === 'archived') return;
+    const dayRaw = g.calendar?.find(c => c.date === today);
+    const day = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
+    if (!day) return;
+    if (day.B) { stats.B.a += day.BA; stats.B.k += day.BK; }
+    if (day.L) { stats.L.a += day.LA; stats.L.k += day.LK; }
+    if (day.D) { stats.D.a += day.DA; stats.D.k += day.DK; }
+    const meals = [];
+    if (day.B) meals.push(`<span class="val-b">З${toInt(day.BA)}+${toInt(day.BK)}</span>`);
+    if (day.L) meals.push(`<span class="val-l">О${toInt(day.LA)}+${toInt(day.LK)}</span>`);
+    if (day.D) meals.push(`<span class="val-d">У${toInt(day.DA)}+${toInt(day.DK)}</span>`);
+    guestRows.push(`<div class="chef-breakdown-row"><span class="label">№${sanitize(g.room)} ${sanitize(g.name)}</span><div class="values">${meals.join('') || '—'}</div></div>`);
+  });
+
+  const now = new Date();
+  document.getElementById('chefDate').innerText =
+    now.toLocaleDateString('ru-RU', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('chefB_total').innerText = stats.B.a + stats.B.k;
+  document.getElementById('chefB_sub').innerText   = `${stats.B.a}в + ${stats.B.k}д`;
+  document.getElementById('chefL_total').innerText = stats.L.a + stats.L.k;
+  document.getElementById('chefL_sub').innerText   = `${stats.L.a}в + ${stats.L.k}д`;
+  document.getElementById('chefD_total').innerText = stats.D.a + stats.D.k;
+  document.getElementById('chefD_sub').innerText   = `${stats.D.a}в + ${stats.D.k}д`;
+  document.getElementById('chefBreakdown').innerHTML =
+    guestRows.length ? guestRows.join('') : '<div class="chef-breakdown-row"><span class="label">Нет гостей на сегодня</span></div>';
+  const checkouts = allGuests.filter(g => g.status !== 'archived' && g.out === today);
+  document.getElementById('chefCheckouts').innerHTML = checkouts.length
+    ? checkouts.map(g => `<div class="chef-breakdown-row"><span class="label">№${sanitize(g.room)} ${sanitize(g.name)}</span><span style="color:var(--checkout); font-weight:600;">${sanitize(outTimeLabel(g.outTime))}</span></div>`).join('')
+    : '<div class="chef-breakdown-row"><span class="label">Выездов нет</span></div>';
+};
+
+// ─── WAITER PANEL ───
+window.renderWaiterPanel = () => {
+  const selectedWaiter = document.getElementById('waiterSelector').value;
+  const container = document.getElementById('waiterTablesList');
+  container.innerHTML = '';
+  if (!selectedWaiter) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Выберите официанта выше</div>';
+    return;
+  }
+  const today    = getTodayStr();
+  const myTables = allTables.filter(t => t.waiter === selectedWaiter);
+  if (!myTables.length) {
+    container.innerHTML = `<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Нет назначенных столов</div>`;
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'waiter-grid';
+  myTables.forEach(t => {
+    const g       = allGuests.find(x => x.id === t.guestId);
+    const summary = getMealSummaryForDay(g, today);
+    const isOut   = g && g.out === today;
+    let timerHtml='—', timerClass='';
+    if (t.guestId && t.seatedAt && !t.isPending) {
+      const mins  = Math.floor((Date.now() - t.seatedAt) / 60000);
+      const hours = Math.floor(mins / 60);
+      const rem   = mins % 60;
+      timerHtml  = hours > 0 ? `⏱ ${hours}ч ${rem}м` : `⏱ ${mins}м`;
+      timerClass = mins > 120 ? 'overtime' : '';
+    } else if (t.isPending) {
+      timerHtml = '⏳ ожидание';
+    }
+    let cardClass='wc-free', badgeClass='free', badgeText='Свободен';
+    if (isOut)           { cardClass='wc-checkout'; badgeClass='checkout'; badgeText='Выезд!'; }
+    else if (t.isPending){ cardClass='wc-pending';  badgeClass='pending';  badgeText='В пути'; }
+    else if (t.guestId)  { cardClass='wc-occupied'; badgeClass='occupied'; badgeText='Занят';  }
+    const card = document.createElement('div');
+    card.className = `wtc-card ${cardClass}`;
+    card.innerHTML = `
+      <span class="wtc-badge ${sanitize(badgeClass)}">${sanitize(badgeText)}</span>
+      <div class="wtc-num">${sanitize(String(t.number))}</div>
+      <div class="wtc-guest">${g ? sanitize(g.name) : '—'}</div>
+      <div class="wtc-meal">${g ? sanitize(summary.short) : ''}</div>
+      <div class="wtc-footer">
+        <div class="wtc-timer ${sanitize(timerClass)}">${sanitize(timerHtml)}</div>
+        <div class="wtc-bill">${g ? `${toInt(g.adults)}в+${toInt(g.kids)}д` : '—'}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openTableModal(t.id, t));
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+};
+
+setInterval(() => { if (currentRole === 'waiter') renderWaiterPanel(); }, 60000);
+
+// ─── AUTO-CLEAN ARCHIVE ───
+const autoCleanArchive = async () => {
+  const cutoff = Date.now() - WEEK_MS;
+  const toDelete = allGuests.filter(g => g.status==='archived' && g.archivedAt && g.archivedAt < cutoff);
+  for (const g of toDelete) await deleteDoc(doc(db, 'guests', g.id));
+  if (toDelete.length) showToast(`🗑️ Авто-очистка: удалено ${toDelete.length} из архива`);
+};
+
+let cleanupRan = false;
+
+// ─── RENDER STATS & QUEUE ───
+// ИСПРАВЛЕНИЕ 3: была полностью дублированная функция _renderStatsAndQueue —
+// убран второй блок кода, который выполнялся вне функции (вызывал ошибки)
+const renderStatsAndQueue = debounceFrame(_renderStatsAndQueue);
+
+function _renderStatsAndQueue() {
+  const today = getTodayStr();
+  const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
+  let checkoutCount = 0;
+
+  const list = document.getElementById('unassignedList');
+  const existingWrappers = new Map(
+    [...list.children].map(el => [el.dataset.gid, el])
+  );
+  const seen = new Set();
+
+  allGuests.forEach(g => {
+    if (g.status === 'archived') return;
+    if (g.out === today) checkoutCount++;
+    const dayRaw = g.calendar?.find(c => c.date === today);
+    const day    = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
+    if (day?.B) { stats.B.a+=day.BA; stats.B.k+=day.BK; }
+    if (day?.L) { stats.L.a+=day.LA; stats.L.k+=day.LK; }
+    if (day?.D) { stats.D.a+=day.DA; stats.D.k+=day.DK; }
+
+    if (g.status === 'waiting') {
+      seen.add(g.id);
+      const isOut   = g.out === today;
+      const summary = getMealSummaryForDay(g, today);
+      const hasNote = !!(g.notes && g.notes.trim());
+
+      const cardHTML = `
+        <b>№${sanitize(g.room)} ${sanitize(g.name)}</b> (${toInt(g.adults)}+${toInt(g.kids)})
+        <small>🍴 ${sanitize(summary.full)}</small>
+        ${hasNote ? `<div class="note-preview-sm">📝 ${sanitize(g.notes.trim())}</div>` : ''}
+        ${isOut ? `<div class="checkout-icon" style="margin-top:4px;">❌ ВЫЕЗД (${sanitize(outTimeLabel(g.outTime))})</div>` : ''}
+        <button class="edit-btn" onclick="openGuestModal('${sanitize(g.id)}')">✏️</button>
+      `;
+
+      let wrapper = existingWrappers.get(g.id);
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'guest-card-wrapper';
+        wrapper.dataset.gid = g.id;
+        list.appendChild(wrapper);
+      }
+      wrapper.innerHTML = `
+        <div class="swipe-action-bg archive">🗃️ В архив</div>
+        <div class="swipe-action-bg edit">✏️ Изменить</div>
+        <div class="guest-card-swipe ${isOut ? 'checkout-today' : ''}" draggable="true">${cardHTML}</div>
+      `;
+    }
+  });
+
+  existingWrappers.forEach((el, id) => { if (!seen.has(id)) el.remove(); });
+
+  document.getElementById('countB').innerText        = `${stats.B.a}в + ${stats.B.k}д`;
+  document.getElementById('countL').innerText        = `${stats.L.a}в + ${stats.L.k}д`;
+  document.getElementById('countD').innerText        = `${stats.D.a}в + ${stats.D.k}д`;
+  document.getElementById('countCheckout').innerText = checkoutCount;
+
+  if (currentRole === 'chef')   renderChefPanel();
+  if (currentRole === 'waiter') renderWaiterPanel();
+
+  if (checkoutCount > 0 && 'Notification' in window && Notification.permission === 'granted') {
+    if (!window._checkoutLocalNotified) {
+      window._checkoutLocalNotified = true;
+      setTimeout(() => {
+        new Notification('👑 Три Короны — Выезды сегодня', {
+          body:  `${checkoutCount} гостей выезжают сегодня`,
+          icon:  APP_ICON_SRC,
+          badge: APP_ICON_SRC,
+          tag:   'checkouts-today'
+        });
+      }, 3000);
+    }
+  }
+}
+
+const updatePendingCount = () => {
+  document.getElementById('countPending').innerText = allTables.filter(t => t.isPending).length;
+};
+
+// ─── RENDER TABLES ───
+const renderTables = debounceFrame(_renderTables);
+
+function getTableStatusClass(t) {
+  if (t.status === 'cleaning') return 'tbl-cleaning';
+  if (!t.guestId)              return 'tbl-free';
+  if (t.isPending)             return 'tbl-booked';
+  return 'tbl-busy';
+}
+
+function _renderTables() {
+  const canvas = document.getElementById('mapCanvas');
+  const today  = getTodayStr();
+  const guestById = new Map(allGuests.map(g => [g.id, g]));
+
+  const visibleIds = new Set(allTables.filter(t => t.zone === currentZone).map(t => t.id));
+  tableNodeMap.forEach((el, id) => {
+    if (!visibleIds.has(id)) { el.remove(); tableNodeMap.delete(id); }
+  });
+
+  allTables.forEach(t => {
+    if (t.zone !== currentZone) return;
+    const g       = guestById.get(t.guestId);
+    const isOut   = g && g.out === today;
+    const summary = getMealSummaryForDay(g, today);
+    const hasNote = !!(g?.notes && g.notes.trim());
+    const statusClass = getTableStatusClass(t);
+    const classes = ['table', statusClass, isOut ? 'checkout-warning' : '', t.isModified ? 'modified' : ''].filter(Boolean).join(' ');
+    const innerHTML = `
+      ${t.isModified ? '<div class="change-alert">⚡</div>' : ''}
+      ${isOut        ? '<div class="checkout-dot">!</div>'  : ''}
+      <b>${sanitize(t.number)}</b>
+      <div class="guest-name">${sanitize(t.guestName || 'Свободно')}</div>
+      <div class="portion-line">${g ? sanitize(summary.portions) : ''}</div>
+      <div class="meal-line">${g ? sanitize(summary.short) : ''}</div>
+      ${hasNote  ? '<div class="note-line">📝</div>'                : ''}
+      ${t.waiter ? `<div class="waiter-line">👤 ${sanitize(t.waiter)}</div>` : ''}
+    `;
+    const renderKey = `${classes}|${t.x}|${t.y}|${innerHTML}`;
+    let el = tableNodeMap.get(t.id);
+    if (!el) {
+      el = document.createElement('div');
+      el.dataset.tableId = t.id;
+      el.addEventListener('mousedown', (e) => {
+        const fresh = allTables.find(x => x.id === t.id) || t;
+        handleTableInteraction(e, el, fresh);
+      });
+      el.addEventListener('touchstart', (e) => {
+        const fresh = allTables.find(x => x.id === t.id) || t;
+        handleTableInteraction(e, el, fresh);
+      }, { passive: true });
+      canvas.appendChild(el);
+      tableNodeMap.set(t.id, el);
+    }
+    if (el.dataset.renderKey !== renderKey) {
+      el.className     = classes;
+      el.style.cssText = `left:${t.x||50}px; top:${t.y||50}px`;
+      el.innerHTML     = innerHTML;
+      el.dataset.renderKey = renderKey;
+    }
+  });
+}
+
+// ─── OFFLINE LOAD ───
+(async function initOfflineLoad() {
+  if (!navigator.onLine) {
+    showToast('📵 Загрузка из оффлайн-кэша...', 3000);
+    try {
+      const cachedGuests = await loadFromOfflineStore('guests');
+      const cachedTables = await loadFromOfflineStore('tables');
+      if (cachedGuests.length || cachedTables.length) {
+        allGuests = cachedGuests.map(g => ({
+          ...g,
+          outTime: normalizeOutTime(g.outTime),
+          calendar: (g.calendar||[]).map(day => normalizeCalendarDay(day, g.adults, g.kids))
+        }));
+        allTables = cachedTables;
+        renderStatsAndQueue();
+        renderTables();
+        updatePendingCount();
+        if (currentRole === 'waiter') renderWaiterPanel();
+        if (currentRole === 'chef') renderChefPanel();
+      }
+    } catch (err) { console.warn('[Offline] Не удалось загрузить кэш:', err); }
+  }
+})();
+
+// ─── AUTH + FIRESTORE LISTENERS ───
+// Анонимный вход — для доступа к данным без отображения UI входа.
+// Firestore Rules требуют request.auth != null.
+let firestoreListenersStarted = false;
+
+function startFirestoreListeners() {
+  if (firestoreListenersStarted) return;
+  firestoreListenersStarted = true;
+
+onSnapshot(collection(db, 'guests'), (sn) => {
+  allGuests = [];
+  sn.forEach(d => {
+    const g = { id: d.id, ...d.data() };
+    g.outTime  = normalizeOutTime(g.outTime);
+    g.calendar = (g.calendar||[]).map(day => normalizeCalendarDay(day, g.adults, g.kids));
+    allGuests.push(g);
+  });
+  saveToOfflineStore('guests', allGuests).catch(() => {});
+  renderStatsAndQueue();
+  renderTables();
+  if (currentListMode) renderCurrentList();
+  if (!cleanupRan) { cleanupRan = true; autoCleanArchive(); }
+}, (err) => { console.error('Firestore guests error:', err); showToast('❌ Ошибка БД: ' + err.message); });
+
+onSnapshot(collection(db, 'tables'), (sn) => {
+  allTables = [];
+  sn.forEach(d => allTables.push({ id: d.id, ...d.data() }));
+  saveToOfflineStore('tables', allTables).catch(() => {});
+  updatePendingCount();
+  renderTables();
+  if (currentRole === 'waiter') renderWaiterPanel();
+}, (err) => { console.error('Firestore tables error:', err); showToast('❌ Ошибка БД столов: ' + err.message); });
+} // end startFirestoreListeners
+
+
+// ─── CALENDAR ───
+window.generateCalendar = (preserveExisting=true) => {
+  const outDate = parseLocalDate(document.getElementById('gOut').value);
+  if (!outDate) { guestCalendar=[]; selectedDayIndex=null; renderCalendarUI(); renderSelectedDayEditor(); return; }
+  const start = parseLocalDate(getTodayStr());
+  const next  = [];
+  for (let d=new Date(start); d<=outDate; d.setDate(d.getDate()+1)) {
+    const dateStr  = formatDateLocal(d);
+    const existing = preserveExisting ? guestCalendar.find(c => c.date===dateStr) : null;
+    const day      = existing
+      ? enforceCheckoutLimit(normalizeCalendarDay(existing, document.getElementById('gAdults').value, document.getElementById('gKids').value))
+      : buildDefaultDay(dateStr);
+    next.push(day);
+  }
+  guestCalendar = next;
+  if (guestCalendar.length) { if (selectedDayIndex===null||selectedDayIndex>=guestCalendar.length) selectedDayIndex=0; }
+  else selectedDayIndex=null;
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+function renderCalendarUI() {
+  const cont = document.getElementById('calendarContainer');
+  const frag = document.createDocumentFragment();
+  cont.innerHTML = '';
+  guestCalendar.forEach((day, idx) => {
+    const box = document.createElement('div');
+    box.className = `day-box ${idx===selectedDayIndex?'active':''}`;
+    box.onclick   = () => selectDay(idx);
+    box.innerHTML = `
+      <b>${shortDate(day.date)}</b><br>
+      <div class="meal-mini-tag ${day.B?'on':''} ${isMealLocked(day.date,'B')?'locked':''}" onclick="toggleMeal(${idx},'B',event)">З</div>
+      <div class="meal-mini-tag ${day.L?'on':''} ${isMealLocked(day.date,'L')?'locked':''}" onclick="toggleMeal(${idx},'L',event)">О</div>
+      <div class="meal-mini-tag ${day.D?'on':''} ${isMealLocked(day.date,'D')?'locked':''}" onclick="toggleMeal(${idx},'D',event)">У</div>
+      <div style="margin-top:3px;color:var(--text-dim);font-size:9px;">${describeDayWithCounts(day)}</div>
+    `;
+    frag.appendChild(box);
+  });
+  cont.appendChild(frag);
+}
+
+function renderSelectedDayEditor() {
+  const editor = document.getElementById('dayEditor');
+  if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) { editor.style.display='none'; return; }
+  const day = guestCalendar[selectedDayIndex];
+  editor.style.display = 'block';
+  document.getElementById('selectedDayTitle').innerText = `Дата: ${shortDate(day.date)}`;
+  let text = `Сейчас: ${describeDayWithCounts(day)}`;
+  if (isCheckoutDate(day.date)) text += ` • выезд ${outTimeLabel(document.getElementById('gOutTime').value)}`;
+  document.getElementById('selectedDayInfo').innerText = text;
+  document.getElementById('btnMealB').className = day.B?'':'off';
+  document.getElementById('btnMealL').className = day.L?'':'off';
+  document.getElementById('btnMealD').className = day.D?'':'off';
+  document.getElementById('dayBA').value = day.BA;
+  document.getElementById('dayBK').value = day.BK;
+  document.getElementById('dayLA').value = day.LA;
+  document.getElementById('dayLK').value = day.LK;
+  document.getElementById('dayDA').value = day.DA;
+  document.getElementById('dayDK').value = day.DK;
+  document.getElementById('dayBA').disabled = !day.B||isMealLocked(day.date,'B');
+  document.getElementById('dayBK').disabled = !day.B||isMealLocked(day.date,'B');
+  document.getElementById('dayLA').disabled = !day.L||isMealLocked(day.date,'L');
+  document.getElementById('dayLK').disabled = !day.L||isMealLocked(day.date,'L');
+  document.getElementById('dayDA').disabled = !day.D||isMealLocked(day.date,'D');
+  document.getElementById('dayDK').disabled = !day.D||isMealLocked(day.date,'D');
+  document.getElementById('btnMealB').disabled = isMealLocked(day.date,'B');
+  document.getElementById('btnMealL').disabled = isMealLocked(day.date,'L');
+  document.getElementById('btnMealD').disabled = isMealLocked(day.date,'D');
+}
+
+window.selectDay = (idx) => { selectedDayIndex=idx; renderCalendarUI(); renderSelectedDayEditor(); };
+window.toggleMeal = (idx, type, e) => { e.stopPropagation(); selectedDayIndex=idx; setMealEnabledInSelectedDay(type); };
+
+window.setMealEnabledInSelectedDay = (type) => {
+  if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+  const day = {...guestCalendar[selectedDayIndex]};
+  if (isMealLocked(day.date, type)) return;
+  if (type==='B') { day.B=!day.B; if(!day.B){day.BA=0;day.BK=0;} }
+  if (type==='L') { day.L=!day.L; if(!day.L){day.LA=0;day.LK=0;} }
+  if (type==='D') { day.D=!day.D; if(!day.D){day.DA=0;day.DK=0;} }
+  guestCalendar[selectedDayIndex] = enforceCheckoutLimit(fillCountsForEnabled(day));
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+window.updateSelectedMealCount = (meal, kind, value) => {
+  if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+  const day = {...guestCalendar[selectedDayIndex]};
+  const num = toInt(value);
+  if (meal==='B') { day.B=true; if(kind==='A') day.BA=num; else day.BK=num; }
+  if (meal==='L') { day.L=true; if(kind==='A') day.LA=num; else day.LK=num; }
+  if (meal==='D') { day.D=true; if(kind==='A') day.DA=num; else day.DK=num; }
+  guestCalendar[selectedDayIndex] = enforceCheckoutLimit(day);
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+window.setSelectedDayPlan = (mode) => {
+  if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+  const base = getCurrentBaseCounts();
+  const tpl  = getTemplateForPlan(mode);
+  guestCalendar[selectedDayIndex] = enforceCheckoutLimit(makeDayObject(
+    guestCalendar[selectedDayIndex].date,
+    tpl.B,tpl.L,tpl.D,
+    tpl.B?base.adults:0, tpl.B?base.kids:0,
+    tpl.L?base.adults:0, tpl.L?base.kids:0,
+    tpl.D?base.adults:0, tpl.D?base.kids:0
+  ));
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+window.clearSelectedDayMeals = () => {
+  if (selectedDayIndex===null||!guestCalendar[selectedDayIndex]) return;
+  guestCalendar[selectedDayIndex] = sanitizeDay(makeDayObject(guestCalendar[selectedDayIndex].date,false,false,false,0,0,0,0,0,0));
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+window.bulkMeal = (mode) => {
+  const base = getCurrentBaseCounts();
+  guestCalendar = guestCalendar.map(day => {
+    const n = {...day};
+    if (mode==='L') { n.L=true; n.LA=base.adults; n.LK=base.kids; }
+    if (mode==='full') {
+      n.B=true;n.L=true;n.D=true;
+      n.BA=base.adults;n.BK=base.kids;
+      n.LA=base.adults;n.LK=base.kids;
+      n.DA=base.adults;n.DK=base.kids;
+    }
+    return enforceCheckoutLimit(n);
+  });
+  renderCalendarUI();
+  renderSelectedDayEditor();
+};
+
+// ─── SAVE GUEST ───
+window.saveGuest = async () => {
+  const submitBtn = document.querySelector('#guestModal .btn-success, button[onclick="saveGuest()"]');
+  const room    = sanitizeInput(document.getElementById('gRoom').value);
+  const name    = sanitizeInput(document.getElementById('gName').value);
+  const adults  = sanitizeInput(document.getElementById('gAdults').value || '0');
+  const kids    = sanitizeInput(document.getElementById('gKids').value || '0');
+  const out     = document.getElementById('gOut').value;
+  const outTime = normalizeOutTime(document.getElementById('gOutTime').value);
+  const mealPlan= sanitizeInput(document.getElementById('gMealPlan').value);
+  const notes   = sanitizeInput(document.getElementById('gNotes').value);
+
+  if (!room || !name || !out) { alert('Заполни комнату, имя и дату выезда.'); return; }
+  if (!guestCalendar.length) generateCalendar(true);
+
+  let data;
+  try {
+    data = validateGuestInput({ room, name, adults, kids, out, outTime, mealPlan, notes, calendar: guestCalendar, updatedAt: Date.now() });
+  } catch (err) {
+    alert(err.message);
+    return;
+  }
+
+  const normalizedCalendar = data.calendar.map(day => enforceCheckoutLimit(normalizeCalendarDay(day, String(data.adults), String(data.kids))));
+  data.calendar = normalizedCalendar;
+  data.adults = Number.parseInt(String(data.adults), 10);
+  data.kids = Number.parseInt(String(data.kids), 10);
+
+  lockSubmitButton(submitBtn, 'Сохраняю...');
+  try {
+    if (editingGuestId) {
+      const oldGuest = allGuests.find(x => x.id===editingGuestId);
+      const diffText = buildGuestDiff(oldGuest, data);
+      await updateDoc(doc(db,'guests',editingGuestId), data);
+      const relatedTables = allTables.filter(t => t.guestId===editingGuestId);
+      for (const t of relatedTables) {
+        await updateDoc(doc(db,'tables',t.id), { isModified: true, modificationText: diffText, modifiedAt: Date.now(), guestName: name });
+      }
+      showToast('✅ Данные гостя обновлены');
+    } else {
+      await addDoc(collection(db,'guests'), { ...data, status:'waiting' });
+      showToast('✅ Гость добавлен в очередь');
+    }
+    closeModal('guestModal');
+  } catch(err) {
+    console.error('saveGuest error:', err);
+    alert('❌ Ошибка сохранения: ' + err.message);
+  } finally {
+    setTimeout(() => unlockSubmitButton(submitBtn), 2000);
+  }
+};
+
+// ─── TABLE MODAL ───
+window.openTableModal = async (id, data) => {
+  if (isDesktopTablePanel()) {
+    await openTableSidePanel(id, data);
+    return;
+  }
+  selectedTableId = id;
+  document.getElementById('tTitle').innerText = 'Стол №' + data.number;
+  const today = getTodayStr();
+
+  if (data.guestId) {
+    const g       = allGuests.find(x => x.id===data.guestId);
+    const summary = getMealSummaryForDay(g, today);
+    document.getElementById('assignForm').style.display = 'none';
+    document.getElementById('occForm').style.display    = 'block';
+    document.getElementById('arrBtn').style.display     = data.isPending ? 'block' : 'none';
+    document.getElementById('occData').innerHTML = `
+      <b>${sanitize(g?.name||'Гость')} (№${sanitize(g?.room||'-')})</b><br>
+      👥 Гости: ${toInt(g?.adults)}в + ${toInt(g?.kids)}д<br>
+      🍴 СЕГОДНЯ: <span>${sanitize(summary.full)}</span><br>
+      📅 Выезд: ${sanitize(g?.out||'-')} (${sanitize(outTimeLabel(g?.outTime))})
+    `;
+    const notesBox = document.getElementById('occNotes');
+    if (g?.notes && g.notes.trim()) {
+      notesBox.style.display = 'block';
+      notesBox.textContent   = '📝 ' + g.notes.trim();
+    } else {
+      notesBox.style.display = 'none';
+    }
+    if (data.isModified) {
+      document.getElementById('mealAlert').style.display = 'block';
+      document.getElementById('mDiff').textContent       = data.modificationText||'Питание обновлено';
+      await updateDoc(doc(db,'tables',id), { isModified: false, modificationText:'' });
+    } else {
+      document.getElementById('mealAlert').style.display = 'none';
+    }
+  } else {
+    document.getElementById('assignForm').style.display = 'block';
+    document.getElementById('occForm').style.display    = 'none';
+    document.getElementById('mealAlert').style.display  = 'none';
+    const sel = document.getElementById('selGuest');
+    sel.innerHTML = '<option value="">Кто садится?</option>';
+    allGuests.filter(x => x.status==='waiting').forEach(x => {
+      const s = getMealSummaryForDay(x, today);
+      const opt = document.createElement('option');
+      opt.value = x.id;
+      opt.textContent = `№${x.room} - ${x.name} (${s.short})`;
+      sel.appendChild(opt);
+    });
+  }
+
+  document.getElementById('tblWaiterSel').value = data.waiter || '';
+  showModal('tableModal', true);
+};
+
+window.saveWaiter = async () => {
+  if (!selectedTableId) return;
+  const waiter = document.getElementById('tblWaiterSel').value;
+  try {
+    await updateDoc(doc(db,'tables',selectedTableId), { waiter: waiter || null });
+    showToast(waiter ? `👔 Официант ${waiter} назначен` : '👔 Официант снят');
+    closeAllModals();
+  } catch(err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+window.deleteCurrentTable = async () => {
+  if (!selectedTableId) return;
+  const t = allTables.find(x => x.id===selectedTableId);
+  if (!confirm(`Удалить стол №${t?.number||'?'} навсегда?`)) return;
+  try {
+    await deleteDoc(doc(db,'tables',selectedTableId));
+    const el = tableNodeMap.get(selectedTableId);
+    if (el) { el.remove(); tableNodeMap.delete(selectedTableId); }
+    closeAllModals();
+    showToast('🗑️ Стол удалён');
+  } catch(err) { alert('❌ Ошибка удаления: ' + err.message); }
+};
+
+window.assignToTable = async () => {
+  const gid = document.getElementById('selGuest').value;
+  if (!gid) return;
+  const g = allGuests.find(x => x.id===gid);
+  try {
+    // Освобождаем предыдущий стол гостя, если он уже сидит (защита от двойной посадки)
+    const prevTable = allTables.find(t => t.guestId === gid && t.id !== selectedTableId);
+    if (prevTable) {
+      await updateDoc(doc(db,'tables',prevTable.id), {
+        guestId: null, guestName: null, isPending: false,
+        isModified: false, modificationText: '', seatedAt: null
+      });
+    }
+    await updateDoc(doc(db,'guests',gid), { status:'seated' });
+    await updateDoc(doc(db,'tables',selectedTableId), {
+      guestId: gid, guestName: g.name,
+      isPending: true, isModified: false, modificationText: '', seatedAt: Date.now()
+    });
+    closeAllModals();
+    showToast(`🪑 ${g.name} посажен(а) за стол`);
+  } catch(err) { alert('❌ Ошибка посадки: ' + err.message); }
+};
+
+window.confirmArrival = async () => {
+  await updateDoc(doc(db,'tables',selectedTableId), { isPending: false });
+  closeAllModals();
+  showToast('✅ Прибытие подтверждено');
+};
+
+window.freeTable = async () => {
+  const t = allTables.find(x => x.id===selectedTableId);
+  if (!t?.guestId) return;
+  try {
+    await updateDoc(doc(db,'guests',t.guestId), { status:'archived', archivedAt: Date.now() });
+    await updateDoc(doc(db,'tables',selectedTableId), {
+      guestId: null, guestName: null, isPending: false,
+      isModified: false, modificationText: '', seatedAt: null
+    });
+    closeAllModals();
+    showToast('🗃️ Гость перемещён в архив');
+  } catch(err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+// ─── LIST MODAL ───
+const openList = (title, mode, items, withSearch=false) => {
+  currentListMode  = mode;
+  currentListItems = items;
+  document.getElementById('listTitle').innerText           = title;
+  document.getElementById('archiveClearRow').style.display = mode==='archive' ? 'block' : 'none';
+  const search = document.getElementById('listSearch');
+  search.style.display = withSearch ? 'block' : 'none';
+  if (!withSearch) search.value = '';
+  renderCurrentList();
+  showModal('listModal', true);
+};
+
+window.renderCurrentList = () => {
+  const cont  = document.getElementById('listContent');
+  const search= document.getElementById('listSearch');
+  const query = search.style.display==='none' ? '' : search.value.trim().toLowerCase();
+  const frag  = document.createDocumentFragment();
+  cont.innerHTML = '';
+
+  let items = currentListItems;
+  if (query) items = items.filter(item => searchMatches(item, query));
+  if (!items.length) { cont.innerHTML='<div class="list-item">Ничего не найдено</div>'; return; }
+
+  items.forEach(g => {
+    const todaySummary = getMealSummaryForDay(g, getTodayStr());
+    const item = document.createElement('div');
+    item.className = 'list-item';
+
+    if (currentListMode==='archive') {
+      const ageMs    = Date.now() - (g.archivedAt||0);
+      const daysLeft = Math.max(0, 7 - Math.floor(ageMs / 86400000));
+      item.innerHTML = `
+        <span>
+          №${sanitize(g.room)} ${sanitize(g.name)}<br>
+          <span class="muted">Архив • Выезд: ${sanitize(shortDate(g.out))} (${sanitize(outTimeLabel(g.outTime))})
+          ${g.archivedAt ? `• удалится через ${daysLeft}д` : ''}</span>
+        </span>
+        <button class="q-btn">👁</button>
+      `;
+      item.onclick = () => openArchiveDetails(g.id);
+
+    } else if (currentListMode==='all') {
+      const isOut = g.out===getTodayStr();
+      item.innerHTML = `
+        <div class="checkbox-cell">
+          <input type="checkbox" class="bulk-checkbox" data-gid="${sanitize(g.id)}" onchange="updateBulkActions()">
+        </div>
+        <span class="item-content">
+          №${sanitize(g.room)} ${sanitize(g.name)} ${isOut?'<span style="color:var(--danger)">📤</span>':''}<br>
+          <span class="muted">${sanitize(mealPlanLabel(g.mealPlan||'B'))} • ${sanitize(todaySummary.short)}</span>
+          ${g.notes ? `<div class="note-preview-sm" style="margin-top:4px">${sanitize(g.notes.substring(0,60))}</div>` : ''}
+        </span>
+        <button class="q-btn">✏️</button>
+      `;
+      item.onclick = (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') return;
+        openGuestModal(g.id);
+      };
+
+    } else if (currentListMode==='checkouts') {
+      item.innerHTML = `
+        <div class="checkout-list-item" style="width:100%">
+          <b>№${sanitize(g.room)} — ${sanitize(g.name)}</b> (${toInt(g.adults)}в + ${toInt(g.kids)}д)<br>
+          Выезд: <b>${sanitize(outTimeLabel(g.outTime))}</b><br>
+          <span class="muted">${sanitize(todaySummary.full)}</span>
+          ${g.notes ? `<div class="note-preview-sm" style="margin-top:4px">${sanitize(g.notes)}</div>` : ''}
+        </div>
+      `;
+      item.onclick = () => openGuestModal(g.id);
+    } else {
+      item.innerHTML = `<span>${sanitize(g.name)}</span>`;
+    }
+    frag.appendChild(item);
+  });
+  cont.appendChild(frag);
+  if (typeof updateBulkActions === 'function') updateBulkActions();
+};
+
+window.showAllGuests = () => {
+  const items = allGuests.filter(g => g.status!=='archived').sort((a,b) => (a.room||'').localeCompare(b.room||''));
+  openList('📋 Все гости', 'all', items, true);
+};
+
+window.showPendingGuests = () => {
+  const cont = document.getElementById('listContent');
+  document.getElementById('listTitle').innerText = '🚶 В пути';
+  document.getElementById('listSearch').style.display = 'none';
+  document.getElementById('archiveClearRow').style.display = 'none';
+  cont.innerHTML = '';
+  allTables.filter(t => t.isPending).forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'list-item';
+    el.textContent = `Стол ${t.number} (${t.zone}) — ${t.guestName}`;
+    cont.appendChild(el);
+  });
+  if (!cont.innerHTML) cont.innerHTML='<div class="list-item">Никого нет</div>';
+  showModal('listModal', true);
+};
+
+window.showArchive = () => {
+  const items = allGuests.filter(g => g.status==='archived').sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0));
+  openList('📜 Архив', 'archive', items, true);
+};
+
+window.showCheckoutsToday = () => {
+  const today = getTodayStr();
+  const items = allGuests
+    .filter(g => g.status!=='archived' && g.out===today)
+    .sort((a,b) => {
+      const order = {B:0,L:1,D:2};
+      return (order[normalizeOutTime(a.outTime)]||0)-(order[normalizeOutTime(b.outTime)]||0);
+    });
+  openList(`🚪 Выезды сегодня (${items.length})`, 'checkouts', items, false);
+};
+
+window.openArchiveDetails = (id) => {
+  const g = allGuests.find(x => x.id===id);
+  if (!g) return;
+  const calendar = (g.calendar||[]).slice().sort((a,b) => a.date.localeCompare(b.date));
+  let html = `
+    <div style="font-size:13px;line-height:1.8;color:var(--text-muted);">
+    <div><b style="color:var(--text)">Комната:</b> ${sanitize(g.room)}</div>
+    <div><b style="color:var(--text)">Имя:</b> ${sanitize(g.name)}</div>
+    <div><b style="color:var(--text)">Гости:</b> ${toInt(g.adults)}в + ${toInt(g.kids)}д</div>
+    <div><b style="color:var(--text)">Тип питания:</b> ${sanitize(mealPlanLabel(g.mealPlan||'B'))}</div>
+    <div><b style="color:var(--text)">Выезд:</b> ${sanitize(g.out)} (${sanitize(outTimeLabel(g.outTime))})</div>
+    ${g.notes ? `<div style="margin-top:8px"><b style="color:var(--text)">Заметки:</b></div><div class="note-preview">${sanitize(g.notes)}</div>` : ''}
+    </div>
+    <div style="margin-top:12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Питание по датам</div>
+  `;
+  if (!calendar.length) html += '<div class="archive-day-line">Нет данных</div>';
+  else calendar.forEach(day => {
+    const n = normalizeCalendarDay(day, g.adults, g.kids);
+    html += `<div class="archive-day-line"><b>${sanitize(shortDate(n.date))}</b> — ${sanitize(describeDayWithCounts(n))}</div>`;
+  });
+  html += `
+    <button class="btn btn-success" onclick="restoreGuestFromArchive('${sanitize(g.id)}')">♻️ Восстановить из архива</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="deleteGuestPermanently('${sanitize(g.id)}')">🗑️ Удалить навсегда</button>
+  `;
+  document.getElementById('archiveDetailContent').innerHTML = html;
+  showModal('archiveDetailModal', true);
+};
+
+window.restoreGuestFromArchive = async (id) => {
+  await updateDoc(doc(db,'guests',id), { status:'waiting', archivedAt: null });
+  closeModal('archiveDetailModal');
+  showToast('♻️ Гость восстановлен в очередь');
+};
+
+window.deleteGuestPermanently = async (id) => {
+  if (!confirm('Удалить запись навсегда? Это действие необратимо.')) return;
+  await deleteDoc(doc(db,'guests',id));
+  closeModal('archiveDetailModal');
+  showToast('🗑️ Запись удалена');
+};
+
+window.confirmClearArchive = async () => {
+  const archived = allGuests.filter(g => g.status==='archived');
+  if (!archived.length) { showToast('Архив уже пуст'); return; }
+  if (!confirm(`Удалить все ${archived.length} записей из архива?`)) return;
+  for (const g of archived) await deleteDoc(doc(db,'guests',g.id));
+  closeAllModals();
+  showToast(`🗑️ Архив очищен (${archived.length} записей)`);
+};
+
+window.switchZone = (z, e) => {
+  currentZone = z;
+  document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  tableNodeMap.forEach(el => el.remove());
+  tableNodeMap.clear();
+  renderTables();
+};
+
+window.openGuestModal = (id=null) => {
+  editingGuestId   = id;
+  selectedDayIndex = null;
+  if (id) {
+    const g = allGuests.find(x => x.id===id);
+    document.getElementById('gRoom').value     = g.room    || '';
+    document.getElementById('gName').value     = g.name    || '';
+    document.getElementById('gAdults').value   = g.adults  || '1';
+    document.getElementById('gKids').value     = g.kids    || '0';
+    document.getElementById('gOut').value      = g.out     || '';
+    document.getElementById('gOutTime').value  = normalizeOutTime(g.outTime);
+    document.getElementById('gMealPlan').value = g.mealPlan|| 'B';
+    document.getElementById('gNotes').value    = g.notes   || '';
+    guestCalendar = (g.calendar||[]).map(day => normalizeCalendarDay(day,g.adults,g.kids)).sort((a,b) => a.date.localeCompare(b.date));
+    if (guestCalendar.length) selectedDayIndex=0;
+    generateCalendar(true);
+  } else {
+    document.getElementById('gRoom').value     = '';
+    document.getElementById('gName').value     = '';
+    document.getElementById('gAdults').value   = '1';
+    document.getElementById('gKids').value     = '0';
+    document.getElementById('gOut').value      = '';
+    document.getElementById('gOutTime').value  = 'B';
+    document.getElementById('gMealPlan').value = 'B';
+    document.getElementById('gNotes').value    = '';
+    guestCalendar = [];
+    document.getElementById('calendarContainer').innerHTML = '';
+    renderSelectedDayEditor();
+  }
+  showModal('guestModal', true);
+};
+
+let isAddingTable = false;
+
+window.addNewTable = async () => {
+  if (isAddingTable) return;
+  isAddingTable = true;
+  // safety net: гарантированный reset, чтобы кнопка не "залипала" навсегда
+  const safetyReset = setTimeout(() => { isAddingTable = false; }, 30000);
+  try {
+    const zoneName = currentZone==='main' ? 'Зал' : currentZone==='big_terrace' ? 'Б. Терраса' : 'М. Терраса';
+    const n = await showPromptModal('Добавить стол', `Введите номер нового стола (${zoneName})`);
+    if (!n) return;
+    const area = document.getElementById('mapArea');
+    await addDoc(collection(db,'tables'), {
+      number: n, zone: currentZone,
+      x: 60 + (area?.scrollLeft || 0), y: 60 + (area?.scrollTop || 0),
+      isPending: false, isModified: false, modificationText: '', waiter: null, seatedAt: null
+    });
+    showToast(`✅ Стол №${n} добавлен`);
+  } catch(err) {
+    console.error('addNewTable:', err);
+    showToast('❌ Ошибка: ' + (err?.message || 'не удалось добавить'), 4000);
+  } finally {
+    clearTimeout(safetyReset);
+    isAddingTable = false;
+  }
+};
+
+// ─── TABLE INTERACTION ───
+function handleTableInteraction(e, el, data) {
+  if (e.type === 'mousedown') e.preventDefault();
+  const startX = e.clientX ?? e.touches?.[0].clientX ?? 0;
+  const startY = e.clientY ?? e.touches?.[0].clientY ?? 0;
+  const rect   = el.getBoundingClientRect();
+  const offsetX = startX - rect.left;
+  const offsetY = startY - rect.top;
+  let holdTimer=null, isDragging=false, movedEnough=false;
+
+  holdTimer = setTimeout(() => {
+    isDragging = true;
+    el.classList.add('hold-active');
+    document.getElementById('mapArea').classList.add('dragging-table');
+    if (navigator.vibrate) navigator.vibrate(40);
+  }, 400);
+
+  const onMove = (m) => {
+    const cx = m.clientX ?? m.touches?.[0].clientX ?? 0;
+    const cy = m.clientY ?? m.touches?.[0].clientY ?? 0;
+    const dx = Math.abs(cx - startX);
+    const dy = Math.abs(cy - startY);
+    if (!isDragging && (dx > 12 || dy > 12)) { clearTimeout(holdTimer); holdTimer = null; return; }
+    if (!isDragging) return;
+    if (m.cancelable) m.preventDefault();
+    movedEnough = true;
+    const area     = document.getElementById('mapArea');
+    const canvas   = document.getElementById('mapCanvas');
+    const areaRect = area.getBoundingClientRect();
+    const newX = cx - areaRect.left - offsetX + area.scrollLeft;
+    const newY = cy - areaRect.top  - offsetY + area.scrollTop;
+    el.style.left = Math.max(0, Math.min(newX, canvas.offsetWidth  - el.offsetWidth))  + 'px';
+    el.style.top  = Math.max(0, Math.min(newY, canvas.offsetHeight - el.offsetHeight)) + 'px';
+  };
+
+  const onEnd = async () => {
+    clearTimeout(holdTimer);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend',  onEnd);
+    el.classList.remove('hold-active');
+    document.getElementById('mapArea').classList.remove('dragging-table');
+    if (isDragging && movedEnough) {
+      try {
+        await updateDoc(doc(db,'tables',data.id), { x: parseInt(el.style.left), y: parseInt(el.style.top) });
+      } catch(err) { console.error('Позиция не сохранена:', err); }
+    } else if (!isDragging) {
+      openTableModal(data.id, data);
+    }
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend',  onEnd);
+}
+
+// ─── MAP PAN & PINCH ───
+const mapArea = document.getElementById('mapArea');
+const canvas  = document.getElementById('mapCanvas');
+let isPanning = false, panStartX, panStartY, panScrollL, panScrollT;
+let currentScale = 1;
+const MIN_SCALE = 0.4, MAX_SCALE = 2.5;
+let pinchStartDist=0, pinchStartScale=1, pinchMidX=0, pinchMidY=0;
+let pinchStartScrollLeft=0, pinchStartScrollTop=0;
+let lastTapTime=0;
+
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function getTouchMidpoint(touches) {
+  return { x:(touches[0].clientX+touches[1].clientX)/2, y:(touches[0].clientY+touches[1].clientY)/2 };
+}
+
+mapArea.addEventListener('touchstart', (e) => {
+  if (e.target.closest('.table')) return;
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const t = e.touches;
+    pinchStartDist = getTouchDistance(t);
+    pinchStartScale = currentScale;
+    const mid = getTouchMidpoint(t);
+    pinchMidX = mid.x; pinchMidY = mid.y;
+    pinchStartScrollLeft = mapArea.scrollLeft;
+    pinchStartScrollTop  = mapArea.scrollTop;
+    isPanning = false;
+    mapArea.style.cursor = 'default';
+  } else if (e.touches.length === 1) {
+    const touch = e.touches[0];
+    const now = Date.now();
+    if (now - lastTapTime < 300 && Math.abs(touch.clientX-lastTapX)<30 && Math.abs(touch.clientY-lastTapY)<30) {
+      e.preventDefault();
+      handleDoubleTap(touch.clientX, touch.clientY, e.target);
+      lastTapTime = 0;
+      return;
+    }
+    lastTapTime = now;
+    lastTapX = touch.clientX;
+    lastTapY = touch.clientY;
+  }
+}, { passive: false });
+
+mapArea.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    if (pinchStartDist === 0) return;
+    const t = e.touches;
+    const newDist = getTouchDistance(t);
+    let newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, pinchStartScale * (newDist / pinchStartDist)));
+    canvas.style.transform = `scale(${newScale})`;
+    canvas.style.transformOrigin = '0 0';
+    const sf = newScale / pinchStartScale;
+    mapArea.scrollLeft = pinchMidX - (pinchMidX - pinchStartScrollLeft) * sf;
+    mapArea.scrollTop  = pinchMidY - (pinchMidY - pinchStartScrollTop) * sf;
+    currentScale = newScale;
+  } else if (pinchStartDist !== 0) {
+    pinchStartDist = 0;
+  }
+}, { passive: false });
+
+mapArea.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) pinchStartDist = 0;
+});
+
+function handleDoubleTap(clientX, clientY, target) {
+  const tableEl = target.closest('.table');
+  if (tableEl) {
+    const tableRect = tableEl.getBoundingClientRect();
+    const mapRect   = mapArea.getBoundingClientRect();
+    mapArea.scrollTo({
+      left: (tableRect.left+tableRect.right)/2 - mapRect.left + mapArea.scrollLeft - mapRect.width/2,
+      top:  (tableRect.top+tableRect.bottom)/2  - mapRect.top  + mapArea.scrollTop  - mapRect.height/2,
+      behavior: 'smooth'
+    });
+  } else {
+    const mapRect  = mapArea.getBoundingClientRect();
+    const newScale = currentScale >= 1.5 ? 1 : 2;
+    const sf       = newScale / currentScale;
+    canvas.style.transform = `scale(${newScale})`;
+    canvas.style.transformOrigin = '0 0';
+    mapArea.scrollLeft = clientX - (clientX - mapArea.scrollLeft) * sf;
+    mapArea.scrollTop  = clientY - (clientY - mapArea.scrollTop)  * sf;
+    currentScale = newScale;
+  }
+}
+
+canvas.style.transform = `scale(${currentScale})`;
+canvas.style.transformOrigin = '0 0';
+
+mapArea.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.table')) return;
+  isPanning=true; panStartX=e.clientX; panStartY=e.clientY;
+  panScrollL=mapArea.scrollLeft; panScrollT=mapArea.scrollTop;
+  mapArea.style.cursor='grabbing';
+});
+mapArea.addEventListener('mousemove', (e) => {
+  if (!isPanning) return;
+  mapArea.scrollLeft = panScrollL-(e.clientX-panStartX);
+  mapArea.scrollTop  = panScrollT-(e.clientY-panStartY);
+});
+const stopPan=()=>{ isPanning=false; mapArea.style.cursor='grab'; };
+mapArea.addEventListener('mouseup',    stopPan);
+mapArea.addEventListener('mouseleave', stopPan);
+
+// ─── MODALS ───
+function showModal(id, s) {
+  document.getElementById(id).style.display      = s ? 'block' : 'none';
+  document.getElementById('overlay').style.display = s ? 'block' : 'none';
+}
+
+window.closeModal = (id) => {
+  document.getElementById(id).style.display = 'none';
+  if (id==='guestModal') { editingGuestId=null; selectedDayIndex=null; }
+  if (![...document.querySelectorAll('.modal')].some(m => m.style.display==='block'))
+    document.getElementById('overlay').style.display = 'none';
+};
+
+window.closeAllModals = () => {
+  document.querySelectorAll('.modal').forEach(m => m.style.display='none');
+  document.getElementById('overlay').style.display = 'none';
+  closeTableSidePanel();
+  selectedDayIndex = null;
+  editingGuestId   = null;
+};
+
+// ─── DESKTOP TABLE SIDE PANEL ───
+function isDesktopTablePanel() {
+  return window.matchMedia('(min-width: 769px)').matches;
+}
+
+function closeTableSidePanel() {
+  document.getElementById('tableSidePanel')?.classList.remove('open');
+  document.getElementById('tablePanelBackdrop')?.classList.remove('show');
+}
+
+function renderTableDetailsHTML(g, summary) {
+  return `
+    <div class="table-panel-guest-card">
+      <div class="table-panel-room">№${sanitize(g?.room || '-')}</div>
+      <div>
+        <div class="table-panel-name">${sanitize(g?.name || 'Гость')}</div>
+        <div class="table-panel-sub">${toInt(g?.adults)} взрослых · ${toInt(g?.kids)} детей</div>
+      </div>
+    </div>
+    <div class="table-panel-metrics">
+      <div class="table-panel-metric"><span>Сегодня</span><b>${sanitize(summary.full)}</b></div>
+      <div class="table-panel-metric"><span>Выезд</span><b>${sanitize(g?.out || '-')} · ${sanitize(outTimeLabel(g?.outTime))}</b></div>
+      <div class="table-panel-metric"><span>Тариф</span><b>${sanitize(mealPlanLabel(g?.mealPlan || 'B'))}</b></div>
+    </div>
+  `;
+}
+
+async function openTableSidePanel(id, data) {
+  selectedTableId = id;
+  const panel = document.getElementById('tableSidePanel');
+  const backdrop = document.getElementById('tablePanelBackdrop');
+  if (!panel) return;
+
+  document.getElementById('sidePanelTitle').innerText = 'Стол №' + data.number;
+  const today = getTodayStr();
+  const assignForm = document.getElementById('sidePanelAssignForm');
+  const occForm = document.getElementById('sidePanelOccForm');
+  const alertBox = document.getElementById('sidePanelAlert');
+  const arrivalBtn = document.getElementById('sidePanelArrBtn');
+
+  if (data.guestId) {
+    const g = allGuests.find(x => x.id === data.guestId);
+    const summary = getMealSummaryForDay(g, today);
+    assignForm.style.display = 'none';
+    occForm.style.display = 'block';
+    arrivalBtn.style.display = data.isPending ? 'block' : 'none';
+    document.getElementById('sidePanelOccData').innerHTML = renderTableDetailsHTML(g, summary);
+
+    const notesBox = document.getElementById('sidePanelOccNotes');
+    if (g?.notes && g.notes.trim()) {
+      notesBox.style.display = 'block';
+      notesBox.textContent = g.notes.trim();
+    } else {
+      notesBox.style.display = 'none';
+      notesBox.textContent = '';
+    }
+
+    if (data.isModified) {
+      alertBox.style.display = 'block';
+      document.getElementById('sidePanelDiff').innerText = data.modificationText || 'Питание обновлено';
+      await updateDoc(doc(db, 'tables', id), { isModified: false, modificationText: '' });
+    } else {
+      alertBox.style.display = 'none';
+    }
+  } else {
+    assignForm.style.display = 'block';
+    occForm.style.display = 'none';
+    alertBox.style.display = 'none';
+    const sel = document.getElementById('sidePanelSelGuest');
+    sel.innerHTML = '<option value="">Кого посадить?</option>';
+    allGuests.filter(x => x.status === 'waiting').forEach(x => {
+      const s = getMealSummaryForDay(x, today);
+      const opt = document.createElement('option');
+      opt.value = x.id;
+      opt.textContent = `№${x.room} - ${x.name} (${s.short})`;
+      sel.appendChild(opt);
+    });
+  }
+
+  document.getElementById('sidePanelWaiterSel').value = data.waiter || '';
+  panel.classList.add('open');
+  backdrop?.classList.add('show');
+}
+
+window.assignToTableFromSide = async () => {
+  const gid = document.getElementById('sidePanelSelGuest').value;
+  if (!selectedTableId || !gid) return;
+  const g = allGuests.find(x => x.id === gid);
+  try {
+    // Освобождаем предыдущий стол гостя (защита от двойной посадки)
+    const prevTable = allTables.find(t => t.guestId === gid && t.id !== selectedTableId);
+    if (prevTable) {
+      await updateDoc(doc(db, 'tables', prevTable.id), {
+        guestId: null, guestName: null, isPending: false,
+        isModified: false, modificationText: '', seatedAt: null
+      });
+    }
+    await updateDoc(doc(db, 'guests', gid), { status: 'seated' });
+    await updateDoc(doc(db, 'tables', selectedTableId), {
+      guestId: gid, guestName: g.name,
+      isPending: true, isModified: false, modificationText: '', seatedAt: Date.now()
+    });
+    closeTableSidePanel();
+    showToast(`🪑 ${g.name} посажен(а) за стол`);
+  } catch (err) { alert('❌ Ошибка посадки: ' + err.message); }
+};
+
+window.saveWaiterFromSide = async () => {
+  if (!selectedTableId) return;
+  const waiter = document.getElementById('sidePanelWaiterSel').value;
+  try {
+    await updateDoc(doc(db, 'tables', selectedTableId), { waiter: waiter || null });
+    showToast(waiter ? `👔 Официант ${waiter} назначен` : '👔 Официант снят');
+    const t = allTables.find(x => x.id === selectedTableId);
+    if (t) await openTableSidePanel(selectedTableId, { ...t, waiter });
+  } catch (err) { alert('❌ Ошибка: ' + err.message); }
+};
+
+window.confirmArrivalFromSide = async () => {
+  if (!selectedTableId) return;
+  await updateDoc(doc(db, 'tables', selectedTableId), { isPending: false });
+  closeTableSidePanel();
+  showToast('✅ Прибытие подтверждено');
+};
+
+window.freeTableFromSide = async () => {
+  if (!selectedTableId) return;
+  await freeTable();
+  closeTableSidePanel();
+};
+
+window.deleteTableFromSide = async () => {
+  await deleteCurrentTable();
+  closeTableSidePanel();
+};
+
+document.getElementById('sidePanelCloseBtn')?.addEventListener('click', closeTableSidePanel);
+document.getElementById('tablePanelBackdrop')?.addEventListener('click', closeTableSidePanel);
+
+// ─── SWIPE GESTURES ───
+let swipeState = null;
+
+function initSwipeOnQueue() {
+  const list = document.getElementById('unassignedList');
+  if (!list) return;
+  list.addEventListener('touchstart', handleSwipeStart, { passive: false });
+  list.addEventListener('touchmove',  handleSwipeMove,  { passive: false });
+  list.addEventListener('touchend',   handleSwipeEnd);
+}
+
+function getCardElement(target) { return target.closest('.guest-card-swipe'); }
+function getGuestIdFromCard(card) {
+  const wrapper = card.closest('.guest-card-wrapper');
+  return wrapper ? wrapper.dataset.gid : null;
+}
+
+function handleSwipeStart(e) {
+  const card = getCardElement(e.target);
+  if (!card) return;
+  const touch = e.touches[0];
+  swipeState = { card, startX: touch.clientX, startY: touch.clientY, currentX: touch.clientX, swiped: false, direction: null, threshold: 70, maxX: 150 };
+  card.style.transition = 'none';
+}
+
+function handleSwipeMove(e) {
+  if (!swipeState) return;
+  const card  = swipeState.card;
+  const touch = e.touches[0];
+  const dx    = touch.clientX - swipeState.startX;
+  const dy    = Math.abs(touch.clientY - swipeState.startY);
+  if (dy > Math.abs(dx) && !swipeState.swiped) { resetSwipe(); return; }
+  e.preventDefault();
+  swipeState.currentX = touch.clientX;
+  const offsetX = Math.max(-swipeState.maxX, Math.min(swipeState.maxX, dx));
+  card.style.transform = `translateX(${offsetX}px)`;
+  const wrapper = card.closest('.guest-card-wrapper');
+  if (wrapper) {
+    const archiveBg = wrapper.querySelector('.swipe-action-bg.archive');
+    const editBg    = wrapper.querySelector('.swipe-action-bg.edit');
+    if (offsetX < -swipeState.threshold) { archiveBg?.classList.add('visible'); editBg?.classList.remove('visible'); swipeState.direction='archive'; }
+    else if (offsetX > swipeState.threshold) { editBg?.classList.add('visible'); archiveBg?.classList.remove('visible'); swipeState.direction='edit'; }
+    else { archiveBg?.classList.remove('visible'); editBg?.classList.remove('visible'); swipeState.direction=null; }
+  }
+}
+
+function handleSwipeEnd() {
+  if (!swipeState) return;
+  const card  = swipeState.card;
+  const dx    = swipeState.currentX - swipeState.startX;
+  card.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1)';
+  if (Math.abs(dx) > swipeState.threshold && swipeState.direction) {
+    const gid = getGuestIdFromCard(card);
+    if (gid) {
+      if (swipeState.direction === 'archive') archiveGuestFromQueue(gid);
+      else if (swipeState.direction === 'edit') openGuestModal(gid);
+    }
+  }
+  card.style.transform = 'translateX(0)';
+  const wrapper = card.closest('.guest-card-wrapper');
+  if (wrapper) wrapper.querySelectorAll('.swipe-action-bg').forEach(bg => bg.classList.remove('visible'));
+  swipeState = null;
+}
+
+function resetSwipe() {
+  if (swipeState) {
+    const card = swipeState.card;
+    card.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1)';
+    card.style.transform = 'translateX(0)';
+    const wrapper = card.closest('.guest-card-wrapper');
+    if (wrapper) wrapper.querySelectorAll('.swipe-action-bg').forEach(bg => bg.classList.remove('visible'));
+  }
+  swipeState = null;
+}
+
+async function archiveGuestFromQueue(gid) {
+  const g = allGuests.find(x => x.id === gid);
+  if (!g) return;
+  try {
+    await updateDoc(doc(db, 'guests', gid), { status: 'archived', archivedAt: Date.now() });
+    showToast(`🗃️ ${g.name} перемещён в архив`);
+  } catch (err) { showToast('❌ Ошибка архивирования'); }
+}
+
+// ─── FAB ───
+(function() {
+  const fabMainBtn  = document.getElementById('fabMainBtn');
+  const fabMenu     = document.getElementById('fabMenu');
+  const fabBackdrop = document.getElementById('fabBackdrop');
+  if (!fabMainBtn || !fabMenu) return;
+  let menuOpen = false;
+  let lastToggle = 0;
+  const openMenu  = () => { menuOpen=true;  fabMenu.classList.add('open');    fabBackdrop?.classList.add('show');    fabMainBtn.setAttribute('aria-expanded','true');  fabMainBtn.style.transform='rotate(45deg)'; };
+  const closeMenu = () => { menuOpen=false; fabMenu.classList.remove('open'); fabBackdrop?.classList.remove('show'); fabMainBtn.setAttribute('aria-expanded','false'); fabMainBtn.style.transform=''; };
+  const toggle = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const now = Date.now();
+    if (now - lastToggle < 250) return; // защита от двойного срабатывания touch+click
+    lastToggle = now;
+    menuOpen ? closeMenu() : openMenu();
+  };
+  fabMainBtn.setAttribute('aria-label', 'Открыть меню действий');
+  fabMainBtn.setAttribute('aria-expanded', 'false');
+  fabMainBtn.addEventListener('click', toggle);
+  fabMenu.addEventListener('click', (e) => e.stopPropagation());
+  fabBackdrop?.addEventListener('click', closeMenu);
+  // Ждём один кадр после закрытия меню, чтобы backdrop точно скрылся до открытия модала
+  const handleAction = (fn) => (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    closeMenu();
+    requestAnimationFrame(() => { try { fn(); } catch(err) { console.error('[FAB action]', err); } });
+  };
+  document.getElementById('fabAddGuest')?.addEventListener('click', handleAction(() => openGuestModal()));
+  document.getElementById('fabAddTable')?.addEventListener('click', handleAction(() => addNewTable()));
+  document.getElementById('fabCheckouts')?.addEventListener('click', handleAction(() => showCheckoutsToday()));
+})();
+
+// ─── BOTTOM NAV ───
+(function() {
+  const bottomNav = document.getElementById('bottomNav');
+  if (!bottomNav) return;
+  bottomNav.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const role = btn.dataset.role;
+      if (role) switchRole(role);
+    });
+  });
+  window.updateBottomNav = (role) => {
+    bottomNav.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.role === role);
+    });
+  };
+  updateBottomNav('admin');
+})();
+
+// ─── PULL-TO-REFRESH ───
+(function() {
+  const panels = [
+    { containerId: 'chefPanel',   indicatorId: 'chefPtrIndicator',   refreshFn: () => renderChefPanel()   },
+    { containerId: 'waiterPanel', indicatorId: 'waiterPtrIndicator', refreshFn: () => renderWaiterPanel() },
+  ];
+  panels.forEach(panel => {
+    const container = document.getElementById(panel.containerId);
+    const indicator = document.getElementById(panel.indicatorId);
+    if (!container || !indicator) return;
+    let startY=0, pullDistance=0, isPulling=false, isRefreshing=false;
+    const THRESHOLD = 60;
+    container.addEventListener('touchstart', (e) => {
+      if (container.scrollTop > 0) return;
+      startY=e.touches[0].clientY; pullDistance=0; isPulling=true;
+      indicator.classList.remove('refreshing');
+      indicator.querySelector('.ptr-text').textContent = 'Потяните, чтобы обновить';
+    }, { passive: true });
+    container.addEventListener('touchmove', (e) => {
+      if (!isPulling) return;
+      pullDistance = e.touches[0].clientY - startY;
+      if (pullDistance > 0) {
+        indicator.style.opacity  = Math.min(1, pullDistance/THRESHOLD);
+        indicator.style.maxHeight= `${Math.min(40, pullDistance)}px`;
+        indicator.classList.add('active');
+        indicator.querySelector('.ptr-text').textContent = pullDistance>=THRESHOLD ? 'Отпустите, чтобы обновить' : 'Потяните, чтобы обновить';
+      }
+    }, { passive: true });
+    container.addEventListener('touchend', async () => {
+      if (!isPulling) return;
+      isPulling = false;
+      if (pullDistance >= THRESHOLD && !isRefreshing) {
+        isRefreshing = true;
+        indicator.classList.add('refreshing');
+        indicator.querySelector('.ptr-text').textContent = 'Обновление...';
+        indicator.style.maxHeight = '40px'; indicator.style.opacity = '1';
+        try { await panel.refreshFn(); showToast('✅ Данные обновлены'); }
+        catch (err) { showToast('❌ Ошибка обновления'); }
+        setTimeout(() => {
+          indicator.classList.remove('active', 'refreshing');
+          indicator.style.opacity='0'; indicator.style.maxHeight='0';
+          isRefreshing=false;
+        }, 600);
+      } else {
+        indicator.classList.remove('active');
+        indicator.style.opacity='0'; indicator.style.maxHeight='0';
+      }
+      pullDistance=0;
+    });
+  });
+})();
+
+// ─── HOTKEYS ───
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement?.tagName;
+  if (tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  if (e.shiftKey && e.key==='?') { e.preventDefault(); showModal('shortcutsModal', true); return; }
+  if (e.key==='Escape') { e.preventDefault(); closeAllModals(); return; }
+  if (currentRole !== 'admin') return;
+  if (e.key==='n'||e.key==='N') { e.preventDefault(); openGuestModal(); }
+  else if (e.key==='t'||e.key==='T') { e.preventDefault(); addNewTable(); }
+  else if (e.key==='1') { e.preventDefault(); switchZoneByKey('main'); }
+  else if (e.key==='2') { e.preventDefault(); switchZoneByKey('big_terrace'); }
+  else if (e.key==='3') { e.preventDefault(); switchZoneByKey('small_terrace'); }
+});
+
+function switchZoneByKey(zone) {
+  currentZone = zone;
+  document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+  const tabs = document.querySelectorAll('.zone-tab');
+  const zoneMap = { main:0, big_terrace:1, small_terrace:2 };
+  if (tabs[zoneMap[zone]]) tabs[zoneMap[zone]].classList.add('active');
+  tableNodeMap.forEach(el => el.remove());
+  tableNodeMap.clear();
+  renderTables();
+}
+
+// ─── DRAG & DROP ───
+(function() {
+  const queueList = document.getElementById('unassignedList');
+  if (queueList) {
+    queueList.addEventListener('dragstart', (e) => {
+      const card = e.target.closest('.guest-card-swipe');
+      if (!card) return;
+      const wrapper = card.closest('.guest-card-wrapper');
+      const gid = wrapper ? wrapper.dataset.gid : null;
+      if (!gid) return;
+      e.dataTransfer.setData('text/plain', gid);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+      card.addEventListener('dragend', () => card.classList.remove('dragging'), { once: true });
+    });
+  }
+
+  canvas.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.table.drop-target').forEach(el => el.classList.remove('drop-target','invalid'));
+    const tableEl = e.target.closest('.table');
+    if (!tableEl) return;
+    const t = allTables.find(x => x.id === tableEl.dataset.tableId);
+    tableEl.classList.add('drop-target', ...(t && !t.guestId ? [] : ['invalid']));
+  });
+
+  canvas.addEventListener('dragleave', (e) => {
+    const tableEl = e.target.closest('.table');
+    if (tableEl && !tableEl.contains(e.relatedTarget)) tableEl.classList.remove('drop-target','invalid');
+  });
+
+  canvas.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.table.drop-target').forEach(el => el.classList.remove('drop-target','invalid'));
+    const tableEl = e.target.closest('.table');
+    if (!tableEl) return;
+    const t = allTables.find(x => x.id === tableEl.dataset.tableId);
+    if (!t || t.guestId) { showToast('❌ Стол занят или не существует'); return; }
+    const gid = e.dataTransfer.getData('text/plain');
+    if (!gid) return;
+    const g = allGuests.find(x => x.id === gid);
+    if (!g) { showToast('❌ Гость не найден'); return; }
+    try {
+      selectedTableId = t.id;
+      // Освобождаем предыдущий стол гостя (drag&drop защита от двойной посадки)
+      const prevTable = allTables.find(pt => pt.guestId === gid && pt.id !== t.id);
+      if (prevTable) {
+        await updateDoc(doc(db,'tables',prevTable.id), {
+          guestId: null, guestName: null, isPending: false,
+          isModified: false, modificationText: '', seatedAt: null
+        });
+      }
+      await updateDoc(doc(db,'guests',gid), { status:'seated' });
+      await updateDoc(doc(db,'tables',t.id), {
+        guestId: gid, guestName: g.name,
+        isPending: true, isModified: false, modificationText: '', seatedAt: Date.now()
+    });
+    showToast(`🪑 ${g.name} перетащен(а) на стол №${t.number}`);
+    } catch (err) { showToast('❌ Ошибка при посадке'); }
+  });
+})();
+
+// ─── TOUCH DRAG FROM QUEUE TO TABLE ───
+(function() {
+  const queueList = document.getElementById('unassignedList');
+  const mapCanvas = document.getElementById('mapCanvas');
+  if (!queueList || !mapCanvas) return;
+
+  let drag = null;
+
+  function clearTableDropState() {
+    document.querySelectorAll('.table.drop-target, .table.invalid').forEach(el => el.classList.remove('drop-target', 'invalid'));
+  }
+
+  function tableFromPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el?.closest?.('.table') || null;
+  }
+
+  async function seatGuestOnTable(gid, tableEl) {
+    const t = tableEl ? allTables.find(x => x.id === tableEl.dataset.tableId) : null;
+    if (!t || t.guestId) { showToast('❌ Перетащите на свободный стол'); return; }
+    const g = allGuests.find(x => x.id === gid);
+    if (!g) { showToast('❌ Гость не найден'); return; }
+    try {
+      selectedTableId = t.id;
+      // Освобождаем предыдущий стол (touch drag защита от двойной посадки)
+      const prevTable = allTables.find(pt => pt.guestId === gid && pt.id !== t.id);
+      if (prevTable) {
+        await updateDoc(doc(db,'tables',prevTable.id), {
+          guestId: null, guestName: null, isPending: false,
+          isModified: false, modificationText: '', seatedAt: null
+        });
+      }
+      await updateDoc(doc(db,'guests',gid), { status:'seated' });
+      await updateDoc(doc(db,'tables',t.id), {
+        guestId: gid, guestName: g.name,
+        isPending: true, isModified: false, modificationText: '', seatedAt: Date.now()
+    });
+    showToast(`🪑 ${g.name} перетащен(а) на стол №${t.number}`);
+      if (navigator.vibrate) navigator.vibrate(20);
+    } catch (err) { showToast('❌ Ошибка при посадке'); }
+  }
+
+  queueList.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.guest-card-swipe');
+    if (!card || e.pointerType === 'mouse') return;
+    const gid = getGuestIdFromCard(card);
+    if (!gid) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const ghost = card.cloneNode(true);
+    const rect = card.getBoundingClientRect();
+    drag = {
+      gid, card, ghost, startX, startY, active: false,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      timer: setTimeout(() => {
+        if (!drag) return;
+        drag.active = true;
+        ghost.classList.add('queue-drag-ghost');
+        ghost.style.width = rect.width + 'px';
+        ghost.style.left = rect.left + 'px';
+        ghost.style.top = rect.top + 'px';
+        document.body.appendChild(ghost);
+        card.classList.add('dragging');
+        document.body.classList.add('queue-touch-dragging');
+        if (navigator.vibrate) navigator.vibrate(25);
+      }, 220)
+    };
+  }, { passive: true });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = Math.abs(e.clientX - drag.startX);
+    const dy = Math.abs(e.clientY - drag.startY);
+    if (!drag.active && (dx > 12 || dy > 12)) {
+      clearTimeout(drag.timer);
+      drag = null;
+      return;
+    }
+    if (!drag.active) return;
+    e.preventDefault();
+    drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+    drag.ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+    clearTableDropState();
+    const tableEl = tableFromPoint(e.clientX, e.clientY);
+    if (!tableEl) return;
+    const t = allTables.find(x => x.id === tableEl.dataset.tableId);
+    tableEl.classList.add('drop-target', ...(t && !t.guestId ? [] : ['invalid']));
+  }, { passive: false });
+
+  document.addEventListener('pointerup', async (e) => {
+    if (!drag) return;
+    clearTimeout(drag.timer);
+    const current = drag;
+    drag = null;
+    if (current.active) {
+      const tableEl = tableFromPoint(e.clientX, e.clientY);
+      current.ghost.remove();
+      current.card.classList.remove('dragging');
+      document.body.classList.remove('queue-touch-dragging');
+      clearTableDropState();
+      await seatGuestOnTable(current.gid, tableEl);
+    }
+  });
+
+  document.addEventListener('pointercancel', () => {
+    if (!drag) return;
+    clearTimeout(drag.timer);
+    drag.ghost?.remove();
+    drag.card?.classList.remove('dragging');
+    document.body.classList.remove('queue-touch-dragging');
+    clearTableDropState();
+    drag = null;
+  });
+})();
+
+// ─── BULK ACTIONS ───
+window.updateBulkActions = () => {
+  const checked = document.querySelectorAll('#listContent input.bulk-checkbox:checked');
+  const count   = checked.length;
+  document.getElementById('bulkCount').textContent = `Выбрано: ${count}`;
+  document.getElementById('bulkActionsBar').classList.toggle('visible', count > 0);
+};
+
+document.getElementById('bulkArchiveBtn')?.addEventListener('click', async () => {
+  const ids = [...document.querySelectorAll('#listContent input.bulk-checkbox:checked')].map(cb => cb.dataset.gid);
+  if (!ids.length) return;
+  if (!confirm(`Архивировать ${ids.length} выбранных гостей?`)) return;
+  try {
+    for (const id of ids) await updateDoc(doc(db,'guests',id), { status:'archived', archivedAt: Date.now() });
+    showToast(`🗃️ Архивировано гостей: ${ids.length}`);
+    renderCurrentList();
+  } catch (err) { showToast('❌ Ошибка архивирования'); }
+});
+
+document.getElementById('bulkMealBLBtn')?.addEventListener('click', async () => {
+  const ids = [...document.querySelectorAll('#listContent input.bulk-checkbox:checked')].map(cb => cb.dataset.gid);
+  if (!ids.length) return;
+  if (!confirm(`Сменить тариф на "Завтрак + обед" для ${ids.length} гостей?`)) return;
+  try {
+    for (const id of ids) {
+      const g = allGuests.find(x => x.id === id);
+      if (!g) continue;
+      const updatedCalendar = (g.calendar||[]).map(day => {
+        const newDay = { ...day, L:true, LA: day.L ? day.LA : (day.BA||toInt(g.adults)), LK: day.L ? day.LK : (day.BK||toInt(g.kids)) };
+        return enforceCheckoutLimit(normalizeCalendarDay(newDay, g.adults, g.kids));
+      });
+      await updateDoc(doc(db,'guests',id), { mealPlan:'BL', calendar:updatedCalendar, updatedAt:Date.now() });
+    }
+    showToast(`🍽️ Тариф изменён у ${ids.length} гостей`);
+    renderCurrentList();
+  } catch (err) { showToast('❌ Ошибка изменения тарифа'); }
+});
+
+// ─── EXPORT CSV ───
+document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
+  let data = currentListMode==='archive' ? allGuests.filter(g=>g.status==='archived')
+    : currentListMode==='checkouts' ? allGuests.filter(g=>g.status!=='archived'&&g.out===getTodayStr())
+    : allGuests.filter(g=>g.status!=='archived');
+  if (!data.length) { showToast('Нет данных для экспорта'); return; }
+  const header = ['Комната','Имя','Взрослые','Дети','Дата выезда','Время выезда','Тип питания','Заметки','Статус'];
+  const rows = data.map(g => [
+    g.room||'', g.name||'', toInt(g.adults), toInt(g.kids), g.out||'',
+    outTimeLabel(g.outTime), mealPlanLabel(g.mealPlan||'B'),
+    (g.notes||'').replace(/\n/g,' ').trim(),
+    g.status==='archived' ? 'Архив' : g.status==='waiting' ? 'В очереди' : 'За столом'
+  ]);
+  const esc = v => { const s=String(v); return (s.includes(',')||s.includes('"')||s.includes('\n')) ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = [header,...rows].map(r=>r.map(esc).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `gosti_${currentListMode}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast(`📥 Экспортировано ${data.length} записей`);
+});
+
+// ─── THEME TOGGLE ───
+(function() {
+  const btn = document.getElementById('themeToggleBtn');
+  if (!btn) return;
+  const saved = localStorage.getItem('tri-korony-theme');
+  if (saved==='light') { document.body.classList.add('light'); btn.innerHTML='☀️'; }
+  btn.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light');
+    localStorage.setItem('tri-korony-theme', isLight ? 'light' : 'dark');
+    btn.innerHTML = isLight ? '☀️' : '🌙';
+  });
+})();
+
+// ─── CONTEXT MENU ───
+(function() {
+  const contextMenu = document.getElementById('tableContextMenu');
+  if (!contextMenu) return;
+  let activeTableId=null, activeTableData=null;
+
+  function showContextMenu(x, y, tId, tData) {
+    activeTableId=tId; activeTableData=tData;
+    const hasGuest = !!tData.guestId;
+    contextMenu.querySelector('[data-action="assign"]').style.display = hasGuest ? 'none' : 'flex';
+    contextMenu.querySelector('[data-action="free"]').style.display   = hasGuest ? 'flex' : 'none';
+    contextMenu.querySelector('[data-action="edit"]').style.display   = hasGuest ? 'flex' : 'none';
+    const menuW = 200, menuH = contextMenu.offsetHeight||180;
+    let posX=Math.min(x, window.innerWidth-menuW-10), posY=Math.min(y, window.innerHeight-menuH-10);
+    if (posX<0) posX=10; if (posY<0) posY=10;
+    contextMenu.style.left=posX+'px'; contextMenu.style.top=posY+'px';
+    contextMenu.classList.add('visible');
+  }
+
+  function hideContextMenu() { contextMenu.classList.remove('visible'); activeTableId=null; activeTableData=null; }
+
+  document.addEventListener('contextmenu', (e) => {
+    const tableEl = e.target.closest('.table');
+    if (!tableEl) { hideContextMenu(); return; }
+    e.preventDefault();
+    const t = allTables.find(x => x.id===tableEl.dataset.tableId);
+    if (!t) return;
+    showContextMenu(e.clientX, e.clientY, t.id, t);
+  });
+  document.addEventListener('click', (e) => { if (!contextMenu.contains(e.target)) hideContextMenu(); });
+  mapArea.addEventListener('scroll', hideContextMenu);
+
+  let longPressTimer=null;
+  document.addEventListener('touchstart', (e) => {
+    const tableEl = e.target.closest('.table');
+    if (!tableEl) { clearTimeout(longPressTimer); return; }
+    const t = allTables.find(x => x.id===tableEl.dataset.tableId);
+    if (!t) return;
+    longPressTimer = setTimeout(() => {
+      const touch = e.touches[0]||e.changedTouches[0];
+      showContextMenu(touch.clientX, touch.clientY, t.id, t);
+      if (navigator.vibrate) navigator.vibrate(20);
+    }, 500);
+  }, { passive: false });
+  document.addEventListener('touchmove',  () => clearTimeout(longPressTimer));
+  document.addEventListener('touchend',   () => clearTimeout(longPressTimer));
+
+  contextMenu.querySelectorAll('.context-menu-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const action = item.dataset.action;
+      if (!activeTableId||!activeTableData) return;
+      if (action==='assign') openTableModal(activeTableId, activeTableData);
+      else if (action==='free') { selectedTableId=activeTableId; await freeTable(); }
+      else if (action==='edit' && activeTableData.guestId) openGuestModal(activeTableData.guestId);
+      else if (action==='waiter') openTableModal(activeTableId, activeTableData);
+      hideContextMenu();
+    });
+  });
+})();
+
+// ─── OMNISEARCH ───
+(function() {
+  const input   = document.getElementById('omnisearchInput');
+  const results = document.getElementById('omnisearchResults');
+  if (!input||!results) return;
+  let timer=null;
+
+  function escapeRegex(str) { return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function highlight(text, query) {
+    const safe = sanitize(text);
+    if (!query) return safe;
+    return safe.replace(new RegExp(`(${escapeRegex(sanitize(query))})`, 'gi'), '<span class="result-highlight">$1</span>');
+  }
+
+  function getResults(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    const out = [];
+    allGuests.forEach(g => {
+      if (g.status==='archived') return;
+      const hay = [
+        g.room || '', g.name || '', g.notes || '',
+        outTimeLabel(g.outTime), mealPlanLabel(g.mealPlan || 'B'),
+        g.status === 'waiting' ? 'очередь' : 'за столом'
+      ].join(' ').toLowerCase();
+      if (hay.includes(q)) out.push({ type:'guest', id:g.id, title:`№${g.room} ${g.name}`, subtitle:`${mealPlanLabel(g.mealPlan||'B')} • ${g.status==='waiting'?'В очереди':'За столом'}`, icon:'👤', obj:g });
+    });
+    allTables.forEach(t => {
+      const g = allGuests.find(x => x.id===t.guestId);
+      const hay = [t.number||'', t.waiter||'', g?g.name:'', g?g.room:'', t.zone||''].join(' ').toLowerCase();
+      if (hay.includes(q)) out.push({ type:'table', id:t.id, title:`Стол ${t.number} (${t.zone})`, subtitle:`${g?g.name:'Свободен'} ${t.waiter?'• 👔 '+t.waiter:''}`, icon:'🪑', obj:t });
+    });
+    out.sort((a,b) => {
+      const aS=a.title.toLowerCase().startsWith(q), bS=b.title.toLowerCase().startsWith(q);
+      return aS&&!bS?-1:!aS&&bS?1:a.title.localeCompare(b.title);
+    });
+    return out.slice(0,15);
+  }
+
+  function renderResults(res, query) {
+    results.innerHTML = '';
+    if (!res.length) { results.innerHTML='<div class="omnisearch-no-results">Ничего не найдено</div>'; results.classList.add('visible'); return; }
+    res.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'omnisearch-result-item';
+      item.innerHTML = `<span class="result-icon">${r.icon}</span><div><div class="result-text">${highlight(r.title,query)}</div><div class="result-sub">${highlight(r.subtitle,query)}</div></div>`;
+      item.addEventListener('click', () => {
+        if (r.type==='guest') openGuestModal(r.id);
+        else openTableModal(r.id, r.obj);
+        closeSearch();
+      });
+      results.appendChild(item);
+    });
+    results.classList.add('visible');
+  }
+
+  function closeSearch() { results.classList.remove('visible'); results.innerHTML=''; input.value=''; input.blur(); }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value;
+    if (!q.trim()) { results.classList.remove('visible'); results.innerHTML=''; return; }
+    timer = setTimeout(() => renderResults(getResults(q), q), 200);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('omnisearchWrapper')?.contains(e.target)) results.classList.remove('visible');
+  });
+  input.addEventListener('keydown', (e) => { if (e.key==='Escape') closeSearch(); });
+  input.addEventListener('focus', () => { if (input.value.trim()) renderResults(getResults(input.value), input.value); });
+})();
+
+// ─── AUDIT ───
+// ИСПРАВЛЕНИЕ 5: showAuditLog и clearOldAuditLogs переписаны на modular Firestore API
+// (в оригинале использовался устаревший db.collection() — Firestore v8 синтаксис)
+window.showAuditLog = async () => {
+  const modal = document.getElementById('auditModal');
+  const list  = document.getElementById('auditList');
+  if (!modal||!list) return;
+  list.innerHTML = '<div class="muted" style="text-align:center;padding:20px;">Загрузка...</div>';
+  showModal('auditModal', true);
+  try {
+    const q  = query(collection(db,'audit_logs'), orderBy('timestamp','desc'), limit(100));
+    const sn = await getDocs(q);
+    list.innerHTML = '';
+    if (sn.empty) { list.innerHTML='<div class="audit-item muted">Пока нет записей в журнале</div>'; return; }
+    sn.forEach(d => {
+      const log  = d.data();
+      const time = new Date(log.timestamp).toLocaleString('ru-RU');
+      const div  = document.createElement('div');
+      div.className = 'audit-item';
+      div.innerHTML = `<span class="audit-time">${sanitize(time)}</span> <span class="audit-action">${sanitize(log.action)}</span> <span class="audit-details">${sanitize(log.details)}</span>`;
+      list.appendChild(div);
+    });
+  } catch (err) { list.innerHTML=`<div class="muted">Ошибка загрузки: ${sanitize(err.message)}</div>`; }
+};
+
+window.clearOldAuditLogs = async () => {
+  if (!confirm('Удалить записи старше 30 дней?')) return;
+  try {
+    const cutoff = Date.now() - 30*24*60*60*1000;
+    const q  = query(collection(db,'audit_logs'), where('timestamp','<',cutoff));
+    const sn = await getDocs(q);
+    const batch = writeBatch(db);
+    sn.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    showToast(`🗑️ Удалено старых записей: ${sn.size}`);
+    if (document.getElementById('auditModal').style.display==='block') showAuditLog();
+  } catch (err) { showToast('❌ Ошибка при очистке журнала'); }
+};
+
+// ─── AUDIT HOOKS ───
+(function() {
+  const orig = window.saveGuest;
+  window.saveGuest = async function() {
+    const isNew = !editingGuestId;
+    await orig.apply(this, arguments);
+    if (isNew) logAction('Добавлен гость', `Комната ${document.getElementById('gRoom').value.trim()}, ${document.getElementById('gName').value.trim()}`);
+    else { const g=allGuests.find(x=>x.id===editingGuestId); logAction('Изменён гость', `Комната ${g?.room||'?'}, ${g?.name||'?'}`); }
+  };
+
+  const origAssign = window.assignToTable;
+  window.assignToTable = async function() {
+    const gid=document.getElementById('selGuest').value, g=allGuests.find(x=>x.id===gid);
+    await origAssign.apply(this, arguments);
+    if (g) logAction('Посадка за стол', `${g.name} (№${g.room})`, selectedTableId);
+  };
+
+  const origFree = window.freeTable;
+  window.freeTable = async function() {
+    const t=allTables.find(x=>x.id===selectedTableId), g=t?.guestId?allGuests.find(x=>x.id===t.guestId):null;
+    await origFree.apply(this, arguments);
+    if (g) logAction('Освобождён стол', `${g.name} (№${g.room})`, selectedTableId);
+  };
+
+  const origRestore = window.restoreGuestFromArchive;
+  window.restoreGuestFromArchive = async function(id) {
+    const g=allGuests.find(x=>x.id===id);
+    await origRestore(id);
+    if (g) logAction('Восстановлен гость', `${g.name} (№${g.room})`, id);
+  };
+
+  const origWaiter = window.saveWaiter;
+  window.saveWaiter = async function() {
+    const waiter=document.getElementById('tblWaiterSel')?.value;
+    await origWaiter.apply(this, arguments);
+    const t=allTables.find(x=>x.id===selectedTableId);
+    logAction('Назначен официант', `Стол ${t?.number}, ${waiter||'снят'}`, selectedTableId);
+  };
+
+  const origDelete = window.deleteCurrentTable;
+  window.deleteCurrentTable = async function() {
+    const t=allTables.find(x=>x.id===selectedTableId);
+    await origDelete.apply(this, arguments);
+    if (t) logAction('Удалён стол', `Номер ${t.number}`, selectedTableId);
+  };
+
+  const origArrival = window.confirmArrival;
+  window.confirmArrival = async function() {
+    const t=allTables.find(x=>x.id===selectedTableId), g=t?.guestId?allGuests.find(x=>x.id===t.guestId):null;
+    await origArrival.apply(this, arguments);
+    if (g) logAction('Прибытие подтверждено', `${g.name} (№${g.room})`, selectedTableId);
+  };
+
+  const origClear = window.confirmClearArchive;
+  window.confirmClearArchive = async function() {
+    const count=allGuests.filter(g=>g.status==='archived').length;
+    await origClear.apply(this, arguments);
+    if (count>0) logAction('Очищен архив', `Удалено ${count} записей`);
+  };
+})();
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+  initSwipeOnQueue();
+});
+// ========== КОД ВХОДА ==========
+let _firestoreStarted = false;
+
+function safeStartFirestoreListeners() {
+  if (_firestoreStarted) return;
+  _firestoreStarted = true;
+  startFirestoreListeners();
+}
+
+async function signInAdmin(email, password) {
+  const loginScreen = document.getElementById('loginScreen');
+  try {
+    const csrfToken = await getCsrfToken();
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка входа');
+    sessionStorage.setItem('tri-korony-token', data.token);
+    sessionStorage.setItem('tri-korony-csrf', data.csrfToken);
+    console.log('✅ Админ вошёл:', data.user?.email);
+    if (loginScreen) loginScreen.style.display = 'none';
+    safeStartFirestoreListeners();
+    return true;
+  } catch (error) {
+    console.error('❌ Ошибка:', error.message);
+    alert('Ошибка входа: ' + error.message);
+    return false;
+  }
+}
+
+const loginBtn = document.getElementById('loginBtn');
+if (loginBtn) {
+  loginBtn.addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    await signInAdmin(email, password);
+  });
+}
+
+(function restoreSession() {
+  const loginScreen = document.getElementById('loginScreen');
+  if (sessionStorage.getItem('tri-korony-token')) {
+    if (loginScreen) loginScreen.style.display = 'none';
+    safeStartFirestoreListeners();
+  } else if (loginScreen) {
+    loginScreen.style.display = 'flex';
+  }
+})();
+// ========== КОНЕЦ КОДА ВХОДА ==========
+</script>
+
+<!-- PWA -->
+<script>
+(function() {
+  'use strict';
+  const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY';
+  const PUSH_SERVER_URL  = 'http://localhost:3001';
+  const APP_ICON_SRC     = '/icon.svg';
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlAction = urlParams.get('action');
+  if (urlAction) {
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (urlAction==='checkouts'  && typeof showCheckoutsToday==='function') showCheckoutsToday();
+        if (urlAction==='all-guests' && typeof showAllGuests==='function')      showAllGuests();
+        if (urlAction==='add-guest'  && typeof openGuestModal==='function')     openGuestModal();
+      }, 1500);
+    });
+  }
+
+  let swRegistration = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const swCheck = await fetch('/sw.js', { method: 'HEAD', cache: 'no-store' });
+        if (!swCheck.ok) return;
+swRegistration = await navigator.serviceWorker.register('./sw.js');
+        swRegistration.addEventListener('updatefound', () => {
+          const nw = swRegistration.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state==='installed' && navigator.serviceWorker.controller) {
+              window._pendingSwUpdate = nw;
+              document.getElementById('swUpdateBanner').style.display = 'block';
+            }
+          });
+        });
+        await setupPushNotifications(swRegistration);
+        updateNotifBtnUI();
+      } catch(err) { console.warn('[PWA] SW не зарегистрирован:', err); }
+    });
+
+    let swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Перезагружаем только если пользователь сам нажал «Обновить» (applySwUpdate)
+      // Убрана автоматическая перезагрузка — она вызывала SyntaxError при конфликте версий кеша
+      if (!swRefreshing) { swRefreshing = true; }
+    });
+  }
+
+  window.applySwUpdate = () => {
+    if (window._pendingSwUpdate) {
+      window._pendingSwUpdate.postMessage({ type:'SKIP_WAITING' });
+      document.getElementById('swUpdateBanner').textContent = 'Обновление подготовлено. Перезагрузите страницу, когда будете готовы.';
+    } else {
+      document.getElementById('swUpdateBanner').style.display = 'none';
+    }
+  };
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'SW_UPDATED') {
+      document.getElementById('swUpdateBanner').style.display = 'block';
+      document.getElementById('swUpdateBanner').textContent = '🔄 Доступна новая версия приложения — нажмите, чтобы обновить';
+    }
+  });
+
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (!localStorage.getItem('pwa-install-dismissed')) {
+      setTimeout(() => { document.getElementById('installBanner').style.display='flex'; }, 3000);
+    }
+  });
+
+  window.installApp = async () => {
+    if (!deferredInstallPrompt) return;
+    document.getElementById('installBanner').style.display='none';
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if (outcome==='accepted' && typeof showToast==='function') showToast('✅ Приложение устанавливается!');
+  };
+
+  window.dismissInstall = () => {
+    document.getElementById('installBanner').style.display='none';
+    localStorage.setItem('pwa-install-dismissed','1');
+  };
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('installBanner').style.display='none';
+    deferredInstallPrompt=null;
+    if (typeof showToast==='function') showToast('🎉 Приложение установлено!');
+  });
+
+  function urlBase64ToUint8Array(base64String) {
+    try {
+      const padding = '='.repeat((4-base64String.length%4)%4);
+      const base64  = (base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
+    } catch(e) { console.error('[Push] Invalid VAPID key:', e); return null; }
+  }
+
+  async function sendSubscriptionToServer(sub) {
+    if (!sub) return;
+    try {
+      const res = await fetch(`${PUSH_SERVER_URL}/api/subscribe`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(sub.toJSON ? sub.toJSON() : sub)
+      });
+      if (res.ok) localStorage.setItem('push-subscribed','1');
+    } catch(err) { console.warn('[Push] Сервер недоступен:', err.message); }
+  }
+
+  async function setupPushNotifications(reg) {
+    if (!('PushManager' in window)) return;
+    if (VAPID_PUBLIC_KEY==='REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY') { console.warn('[Push] VAPID-ключ не задан'); return; }
+    try {
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) { await sendSubscriptionToServer(existing); return; }
+      if (Notification.permission==='granted') await subscribeToPush(reg);
+    } catch(err) { console.warn('[Push] Ошибка при настройке:', err); }
+  }
+
+  async function subscribeToPush(reg) {
+    try {
+      const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      if (!key) return;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:key });
+      await sendSubscriptionToServer(sub);
+    } catch(err) { console.warn('[Push] Ошибка подписки:', err); }
+  }
+
+  window.requestPushPermission = async () => {
+    if (!('Notification' in window)) { if(typeof showToast==='function') showToast('❌ Уведомления не поддерживаются'); return; }
+    if (Notification.permission==='denied') { if(typeof showToast==='function') showToast('🔔 Уведомления заблокированы. Разрешите в настройках браузера.'); return; }
+    const permission = await Notification.requestPermission();
+    updateNotifBtnUI();
+    if (permission==='granted') {
+      if(typeof showToast==='function') showToast('🔔 Уведомления включены!');
+      if (swRegistration) await subscribeToPush(swRegistration);
+    } else {
+      if(typeof showToast==='function') showToast('🔕 Уведомления не разрешены');
+    }
+  };
+
+  function updateNotifBtnUI() {
+    const btn = document.getElementById('notifBtn');
+    if (!btn||!('Notification' in window)) return;
+    const perm = Notification.permission;
+    btn.classList.remove('active','denied');
+    if (perm==='granted') { btn.classList.add('active'); btn.innerHTML='🔔 <span>Уведомления ✓</span>'; }
+    else if (perm==='denied') { btn.classList.add('denied'); btn.innerHTML='🔕 <span>Заблокированы</span>'; }
+    else { btn.innerHTML='🔔 <span>Уведомления</span>'; }
+  }
+
+  window.addEventListener('online',  () => { if(typeof showToast==='function') showToast('✅ Подключение восстановлено'); });
+  window.addEventListener('offline', () => { if(typeof showToast==='function') showToast('📵 Работаем в оффлайн-режиме', 4000); });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateNotifBtnUI();
+    const reset = () => {
+      const now = new Date();
+      const ms  = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 5).getTime() - now.getTime();
+      setTimeout(() => { window._checkoutLocalNotified=false; reset(); }, ms);
+    };
+    reset();
+  });
+})();
+</script>
+
+</body>
+</html>

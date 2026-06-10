@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Очистка кеша — Три Короны</title>
+<style>
+  body { font-family: sans-serif; background: #0D1B2A; color: #E8E4DC; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  h2 { color: #C9963A; margin-bottom: 16px; }
+  p { color: #8A9BB0; margin: 6px 0; font-size: 14px; }
+  .ok { color: #2EC98A; font-size: 13px; margin: 4px 0; }
+  .err { color: #FF5A5A; font-size: 13px; margin: 4px 0; }
+  #log { margin-top: 20px; text-align: left; min-width: 320px; }
+  #redirect { margin-top: 24px; color: #C9963A; font-size: 15px; }
+</style>
+</head>
+<body>
+<h2>⚙️ Очистка Service Worker и кеша</h2>
+<p>Пожалуйста, подождите...</p>
+<div id="log"></div>
+<div id="redirect"></div>
+<script>
+const log = document.getElementById('log');
+const redir = document.getElementById('redirect');
+
+function addLine(text, ok = true) {
+  const p = document.createElement('p');
+  p.className = ok ? 'ok' : 'err';
+  p.textContent = text;
+  log.appendChild(p);
+}
+
+async function clearEverything() {
+  // 1. Unregister all service workers
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length === 0) {
+      addLine('✓ Service Worker-ов не найдено');
+    }
+    for (const reg of regs) {
+      await reg.unregister();
+      addLine('✓ Service Worker удалён: ' + (reg.scope || 'unknown'));
+    }
+  } else {
+    addLine('ℹ Service Worker не поддерживается в этом браузере');
+  }
+
+  // 2. Clear all caches
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    if (keys.length === 0) {
+      addLine('✓ Кеш уже пуст');
+    }
+    for (const key of keys) {
+      await caches.delete(key);
+      addLine('✓ Кеш удалён: ' + key);
+    }
+  }
+
+  // 3. Clear localStorage keys related to the app
+  const lsKeysToRemove = ['push-subscribed', 'pwa-install-dismissed'];
+  lsKeysToRemove.forEach(k => {
+    if (localStorage.getItem(k) !== null) {
+      localStorage.removeItem(k);
+      addLine('✓ localStorage очищен: ' + k);
+    }
+  });
+
+  addLine('✅ Всё очищено! Перенаправляем...');
+  
+  let countdown = 3;
+  redir.textContent = 'Переход на главную через ' + countdown + ' сек...';
+  const timer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      clearInterval(timer);
+      // Hard navigate — bypasses any remaining cache
+      window.location.replace('/index.html?nocache=' + Date.now());
+    } else {
+      redir.textContent = 'Переход на главную через ' + countdown + ' сек...';
+    }
+  }, 1000);
+}
+
+clearEverything().catch(err => {
+  addLine('❌ Ошибка: ' + err.message, false);
+  redir.textContent = 'Перейдите на главную вручную.';
+});
+</script>
+</body>
+</html>

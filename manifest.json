@@ -1,0 +1,17 @@
+{
+  "name": "Три Короны",
+  "short_name": "Короны",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1B2A",
+  "theme_color": "#C9963A",
+  "description": "Система управления столами и гостями отеля «Три Короны»",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
