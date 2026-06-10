@@ -2498,12 +2498,7 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
   </div>
   <div class="waiter-select-bar">
     <label>Официант:</label>
-    <select id="waiterSelector" onchange="renderWaiterPanel()" style="margin-top:0; flex:1;">
-      <option value="">— Выбрать —</option>
-      
-      <option value="Сергей">Сергей</option>
-      <option value="Нурлан">Нурлан</option>
-    </select>
+    <select id="waiterSelector" onchange="renderWaiterPanel()" style="margin-top:0; flex:1;"> </select>
   </div>
   <div id="waiterTablesList"></div>
 </div>
@@ -2660,11 +2655,7 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
   </div>
   <div class="waiter-block">
     <label>👔 Официант за этим столом</label>
-    <select id="tblWaiterSel">
-      <option value="">— Не назначен —</option>
-      <option value="Сергей">Сергей</option>
-      <option value="Нурлан">Нурлан</option>
-    </select>
+    <select id="tblWaiterSel"> </select>
     <button class="btn btn-success" onclick="saveWaiter()" style="margin-top:8px;">💾 Сохранить официанта</button>
   </div>
   <button class="btn-delete-table" onclick="deleteCurrentTable()">🗑️ Удалить этот стол</button>
@@ -2773,11 +2764,7 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
     </div>
     <div class="waiter-block">
       <label>👔 Официант за этим столом</label>
-      <select id="sidePanelWaiterSel">
-        
-        <option value="Сергей">Сергей</option>
-        <option value="Нурлан">Нурлан</option>
-      </select>
+      <select id="sidePanelWaiterSel"> </select>
       <button class="btn btn-success" onclick="saveWaiterFromSide()" style="margin-top:8px;">💾 Сохранить официанта</button>
     </div>
     <button class="btn-delete-table" onclick="deleteTableFromSide()">🗑️ Удалить этот стол</button>
@@ -2785,71 +2772,22 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
 </div>
 
 <script type="module">
-const API_BASE = '';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, limit, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-async function getCsrfToken() {
-  const cached = sessionStorage.getItem('tri-korony-csrf');
-  if (cached) return cached;
-  const res = await fetch('/api/csrf');
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'CSRF fetch failed');
-  sessionStorage.setItem('tri-korony-csrf', data.csrfToken);
-  return data.csrfToken;
-}
+const firebaseConfig = {
+  apiKey: "AIzaSyChj4N2YdVSWVOdZdjgXzKQ639vvMf-T7k",
+  authDomain: "hotel-46173.firebaseapp.com",
+  projectId: "hotel-46173",
+  storageBucket: "hotel-46173.firebasestorage.app",
+  messagingSenderId: "484899892589",
+  appId: "1:484899892589:web:d54b67a62c97d13b293e64"
+};
 
-async function api(path, options = {}) {
-  const token = sessionStorage.getItem('tri-korony-token');
-  const csrfToken = await getCsrfToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken,
-    ...(options.headers || {})
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include'
-  });
-  const contentType = res.headers.get('content-type') || '';
-  const body = contentType.includes('application/json') ? await res.json() : await res.text();
-  if (!res.ok) throw new Error(body?.error || body || 'Request failed');
-  return body;
-}
-
-function collection(_db, name) { return { kind: 'collection', name }; }
-function doc(_db, name, id) { return { kind: 'doc', name, id }; }
-async function addDoc(ref, data) {
-  const res = await api(`/api/collection/${ref.name}`, { method: 'POST', body: JSON.stringify(data) });
-  return { id: res.id };
-}
-async function updateDoc(ref, data) {
-  await api(`/api/collection/${ref.name}/${ref.id}`, { method: 'PATCH', body: JSON.stringify(data) });
-}
-async function deleteDoc(ref) {
-  await api(`/api/collection/${ref.name}/${ref.id}`, { method: 'DELETE' });
-}
-async function getDocs(ref) {
-  const res = await api(`/api/collection/${ref.name}`);
-  return { docs: (res.items || []).map(item => ({ id: item.id, data: () => item })) };
-}
-function onSnapshot(ref, next, onError) {
-  api(`/api/collection/${ref.name}`)
-    .then((res) => {
-      const docs = (res.items || []).map(item => ({ id: item.id, data: () => item }));
-      next({
-        forEach: (cb) => docs.forEach((doc) => cb({ id: doc.id, data: () => doc.data() })),
-        size: docs.length
-      });
-    })
-    .catch((err) => onError && onError(err));
-  return () => {};
-}
-const query = (ref) => ref;
-const where = () => ({ });
-const orderBy = () => ({ });
-const limit = () => ({ });
-const writeBatch = () => ({ commit: async () => api('/api/batch', { method: 'POST', body: JSON.stringify({ deletes: [] }) }) });
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 // ─── SANITIZE (XSS protection) ───
 function sanitize(str) {
@@ -3591,7 +3529,47 @@ onSnapshot(collection(db, 'tables'), (sn) => {
 }, (err) => { console.error('Firestore tables error:', err); showToast('❌ Ошибка БД столов: ' + err.message); });
 } // end startFirestoreListeners
 
+// ─── ЗАГРУЗКА ОФИЦИАНТОВ ИЗ FIRESTORE ───
+let allWaiters = [];
 
+async function loadWaiters() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'waiters'));
+    allWaiters = [];
+    querySnapshot.forEach(doc => {
+      const waiterData = doc.data();
+      if (waiterData.name) allWaiters.push(waiterData.name);
+    });
+    updateAllWaiterSelects();
+    console.log('✅ Загружены официанты:', allWaiters);
+  } catch (err) {
+    console.error('Ошибка загрузки официантов:', err);
+    allWaiters = ['Даниэль', 'Айганыш', 'Акмарал', 'Алия', 'Нурлан'];
+    updateAllWaiterSelects();
+  }
+}
+
+function updateAllWaiterSelects() {
+  const selects = ['waiterSelector', 'tblWaiterSel', 'sidePanelWaiterSel'];
+  selects.forEach(selectId => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">— Выбрать —</option>';
+    allWaiters.forEach(waiter => {
+      const option = document.createElement('option');
+      option.value = waiter;
+      option.textContent = waiter;
+      select.appendChild(option);
+    });
+    if (currentValue && allWaiters.includes(currentValue)) {
+      select.value = currentValue;
+    }
+  });
+}
+
+// Вызов загрузки после инициализации Firebase
+loadWaiters();
 // ─── CALENDAR ───
 window.generateCalendar = (preserveExisting=true) => {
   const outDate = parseLocalDate(document.getElementById('gOut').value);
@@ -5166,34 +5144,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initSwipeOnQueue();
 });
 // ========== КОД ВХОДА ==========
-let _firestoreStarted = false;
-
-function safeStartFirestoreListeners() {
-  if (_firestoreStarted) return;
-  _firestoreStarted = true;
-  startFirestoreListeners();
-}
-
 async function signInAdmin(email, password) {
   const loginScreen = document.getElementById('loginScreen');
   try {
-    const csrfToken = await getCsrfToken();
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      credentials: 'include',
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Ошибка входа');
-    sessionStorage.setItem('tri-korony-token', data.token);
-    sessionStorage.setItem('tri-korony-csrf', data.csrfToken);
-    console.log('✅ Админ вошёл:', data.user?.email);
+    await signInWithEmailAndPassword(auth, email, password);
+    console.log('✅ Админ вошёл:', email);
     if (loginScreen) loginScreen.style.display = 'none';
-    safeStartFirestoreListeners();
+    startFirestoreListeners();
     return true;
   } catch (error) {
-    console.error('❌ Ошибка:', error.message);
+    console.error('❌ Ошибка входа:', error.message);
     alert('Ошибка входа: ' + error.message);
     return false;
   }
@@ -5208,15 +5168,17 @@ if (loginBtn) {
   });
 }
 
-(function restoreSession() {
+onAuthStateChanged(auth, (user) => {
   const loginScreen = document.getElementById('loginScreen');
-  if (sessionStorage.getItem('tri-korony-token')) {
+  if (user) {
+    console.log('✅ Сессия восстановлена для:', user.email);
     if (loginScreen) loginScreen.style.display = 'none';
-    safeStartFirestoreListeners();
-  } else if (loginScreen) {
-    loginScreen.style.display = 'flex';
+    startFirestoreListeners();
+  } else {
+    console.log('❌ Нет авторизованного пользователя');
+    if (loginScreen) loginScreen.style.display = 'flex';
   }
-})();
+});
 // ========== КОНЕЦ КОДА ВХОДА ==========
 </script>
 
