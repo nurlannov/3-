@@ -2814,7 +2814,7 @@ function validateGuestInput(data) {
   const kids = String(data.kids ?? '0').trim();
   const notes = String(data.notes || '').trim();
 
-  if (!/^\d{1,10}$/.test(room)) throw new Error('Комната должна содержать только цифры (1-10 знаков).');
+  if (!/^[^<>{}\[\]]{1,20}$/.test(room)) throw new Error('Недопустимые символы в поле "Комната".');
   if (!/^[\p{L}\s-]{2,50}$/u.test(name)) throw new Error('Имя должно содержать 2-50 букв, пробелов или дефисов.');
   if (!/^(0|[1-9]\d?)$/.test(adults) || !/^(0|[1-9]\d?)$/.test(kids)) throw new Error('Взрослые и дети должны быть целыми числами от 0 до 10.');
   if (/<[^>]+>/i.test(name) || /<[^>]+>/i.test(notes) || /<[^>]+>/i.test(room)) throw new Error('HTML-теги запрещены в полях ввода.');
