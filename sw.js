@@ -7,7 +7,7 @@
 
 'use strict';
 
-const CACHE_NAME    = 'tri-korony-shell-v6';
+const CACHE_NAME    = 'tri-korony-shell-v7';
 const SHELL_ASSETS  = ['/', '/index.html', '/manifest.json', '/icon.svg'];
 
 // Паттерны запросов, которые НИКОГДА не кешируются
