@@ -73,7 +73,7 @@ function validateGuestPayload(input, partial = false) {
   const errors = [];
 
   if (!partial || Object.prototype.hasOwnProperty.call(data, 'room')) {
-    if (!/^\d{1,10}$/.test(String(data.room || ''))) errors.push('room must contain 1-10 digits');
+    if (!/^[^<>{}\[\]]{1,20}$/.test(room)) throw new Error('Недопустимые символы в поле "Комната".');
   }
   if (!partial || Object.prototype.hasOwnProperty.call(data, 'name')) {
     if (!/^[\p{L}\s-]{2,50}$/u.test(String(data.name || ''))) errors.push('name must contain 2-50 letters, spaces or hyphens');

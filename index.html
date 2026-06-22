@@ -938,6 +938,29 @@ textarea { resize: vertical; min-height: 60px; }
 .val-l { color: var(--success); font-weight: 600; }
 .val-d { color: var(--danger); font-weight: 600; }
 
+.chef-calendar { width:min(100%,720px); margin:0 auto 24px; padding:14px; background:var(--navy-2); border:1px solid var(--glass-border); border-radius:var(--radius); }
+.chef-calendar-controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.chef-calendar-controls input[type=date] { width:auto; min-height:38px; margin:0; padding:6px 10px; color-scheme:dark; }
+.chef-calendar-controls .q-btn { min-height:38px; }
+.chef-calendar-controls .accent { border-color:var(--gold); color:var(--gold); }
+.chef-week { display:grid; grid-template-columns:repeat(7,minmax(76px,1fr)); gap:7px; overflow-x:auto; padding-bottom:2px; }
+.chef-day { min-width:76px; padding:9px 6px; border:1px solid var(--glass-border); border-radius:11px; background:var(--navy-3); color:var(--text); font-family:'DM Sans',sans-serif; cursor:pointer; text-align:center; transition:border-color .18s,background .18s,transform .18s; }
+.chef-day:hover { transform:translateY(-1px); border-color:rgba(201,150,58,.55); }
+.chef-day.selected { background:rgba(201,150,58,.17); border-color:var(--gold); box-shadow:0 0 0 2px rgba(201,150,58,.08); }
+.chef-day.today .chef-day-date::after { content:' •'; color:var(--gold); }
+.chef-day-weekday { display:block; font-size:10px; color:var(--text-muted); text-transform:uppercase; }
+.chef-day-date { display:block; margin:3px 0 6px; font-size:15px; font-weight:700; }
+.chef-day-meals { display:flex; justify-content:center; gap:5px; font-size:9px; white-space:nowrap; }
+.chef-day-empty { color:var(--text-dim); }
+@media (max-width:768px) {
+  #chefPanel { padding:14px 10px 76px; }
+  .chef-calendar { padding:10px; margin-bottom:18px; }
+  .chef-week { grid-template-columns:repeat(7,78px); justify-content:start; }
+  .chef-calendar-controls { gap:6px; }
+  .chef-calendar-controls .q-btn { padding:7px 9px; font-size:11px; }
+  .chef-calendar-controls input[type=date] { max-width:145px; font-size:12px; }
+}
+
 /* ─── WAITER PANEL ─── */
 #waiterPanel {
   display: none;
@@ -2460,6 +2483,16 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
     <div class="ptr-spinner"></div>
     <span class="ptr-text">Потяните, чтобы обновить</span>
   </div>
+  <div class="chef-calendar" aria-label="Календарь питания">
+    <div class="chef-calendar-controls">
+      <button class="q-btn" id="chefPrevDay" type="button" aria-label="Предыдущий день">&larr;</button>
+      <input type="date" id="chefDatePicker" aria-label="Выбрать дату питания">
+      <button class="q-btn" id="chefNextDay" type="button" aria-label="Следующий день">&rarr;</button>
+      <button class="q-btn accent" id="chefTodayBtn" type="button">Сегодня</button>
+      <button class="q-btn" id="chefTomorrowBtn" type="button">Завтра</button>
+    </div>
+    <div class="chef-week" id="chefWeek" aria-label="Питание на неделю"></div>
+  </div>
   <div class="chef-header">
     <div class="chef-title-text">Панель повара</div>
     <div class="chef-date-text" id="chefDate"></div>
@@ -2484,9 +2517,9 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
       <div class="chef-sub" id="chefD_sub">0в + 0д</div>
     </div>
   </div>
-  <div class="chef-section-title">Гости на сегодня</div>
+  <div class="chef-section-title" id="chefGuestsTitle">Гости на выбранную дату</div>
   <div class="chef-breakdown" id="chefBreakdown"></div>
-  <div class="chef-section-title" style="margin-top:20px;">Выезжают сегодня</div>
+  <div class="chef-section-title" id="chefCheckoutsTitle" style="margin-top:20px;">Выезды на выбранную дату</div>
   <div class="chef-breakdown" id="chefCheckouts"></div>
 </div>
 
@@ -2814,7 +2847,7 @@ function validateGuestInput(data) {
   const kids = String(data.kids ?? '0').trim();
   const notes = String(data.notes || '').trim();
 
-  if (!/^\d{1,10}$/.test(room)) throw new Error('Комната должна содержать только цифры (1-10 знаков).');
+  if (!/^[^<>{}\[\]]{1,20}$/.test(room)) throw new Error('Недопустимые символы в поле "Комната".');
   if (!/^[\p{L}\s-]{2,50}$/u.test(name)) throw new Error('Имя должно содержать 2-50 букв, пробелов или дефисов.');
   if (!/^(0|[1-9]\d?)$/.test(adults) || !/^(0|[1-9]\d?)$/.test(kids)) throw new Error('Взрослые и дети должны быть целыми числами от 0 до 10.');
   if (/<[^>]+>/i.test(name) || /<[^>]+>/i.test(notes) || /<[^>]+>/i.test(room)) throw new Error('HTML-теги запрещены в полях ввода.');
@@ -2911,18 +2944,28 @@ async function loadFromOfflineStore(storeName) {
 }
 
 // ─── STATE ───
-let currentZone      = 'main';
-let selectedTableId  = null;
-let editingGuestId   = null;
+const formatDateLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const getTodayStr = () => formatDateLocal(new Date());
+
+let chefSelectedDate = getTodayStr();
+let currentZone = 'main';
+let selectedTableId = null;
+let editingGuestId = null;
 let selectedDayIndex = null;
-let allGuests        = [];
-let allTables        = [];
-let guestCalendar    = [];
-let currentListMode  = '';
+let allGuests = [];
+let allTables = [];
+let guestCalendar = [];
+let currentListMode = '';
 let currentListItems = [];
-let currentRole      = 'admin';
-let lastTapX         = 0;
-let lastTapY         = 0;
+let currentRole = 'admin';
+let lastTapX = 0;
+let lastTapY = 0;
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const APP_ICON_SRC = '/icon.svg';
@@ -2959,12 +3002,7 @@ const checkoutLimits = {
   D: { B: true, L: true,  D: true  }
 };
 
-const formatDateLocal = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,'0');
-  const d = String(date.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
-};
+
 
 const parseLocalDate = (str) => {
   if (!str) return null;
@@ -2972,7 +3010,6 @@ const parseLocalDate = (str) => {
   return new Date(y, m-1, d);
 };
 
-const getTodayStr  = () => formatDateLocal(new Date());
 const shortDate    = (str) => { if (!str) return ''; const [,m,d] = str.split('-'); return `${d}.${m}`; };
 const toInt        = (v)   => Math.max(0, parseInt(v)||0);
 
@@ -3222,20 +3259,61 @@ window.switchRole = (role) => {
   if (typeof updateBottomNav === 'function') updateBottomNav(role);
 };
 
+
 // ─── CHEF PANEL ───
-window.renderChefPanel = () => {
+const getChefDayStats = (dateStr) => {
+  const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
+  allGuests.forEach(g => {
+    if (g.status === 'archived') return;
+    const raw = g.calendar?.find(c => c.date === dateStr);
+    if (!raw) return;
+    const day = normalizeCalendarDay(raw, g.adults, g.kids);
+    if (day.B) { stats.B.a += toInt(day.BA); stats.B.k += toInt(day.BK); }
+    if (day.L) { stats.L.a += toInt(day.LA); stats.L.k += toInt(day.LK); }
+    if (day.D) { stats.D.a += toInt(day.DA); stats.D.k += toInt(day.DK); }
+  });
+  return stats;
+};
+
+function renderChefWeek() {
+  const container = document.getElementById('chefWeek');
+  if (!container) return;
+  const selected = parseLocalDate(chefSelectedDate) || new Date();
+  const weekStart = new Date(selected);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
   const today = getTodayStr();
+  const dayCards = [];
+  for (let index=0; index<7; index++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + index);
+    const dateStr = formatDateLocal(date);
+    const stats = getChefDayStats(dateStr);
+    const b = stats.B.a + stats.B.k;
+    const l = stats.L.a + stats.L.k;
+    const d = stats.D.a + stats.D.k;
+    const meals = b + l + d > 0
+      ? `<span class="chef-day-meals"><span class="val-b">З ${b}</span><span class="val-l">О ${l}</span><span class="val-d">У ${d}</span></span>`
+      : '<span class="chef-day-meals chef-day-empty">нет питания</span>';
+    dayCards.push(`<button type="button" class="chef-day ${dateStr===chefSelectedDate?'selected':''} ${dateStr===today?'today':''}" data-date="${dateStr}">
+      <span class="chef-day-weekday">${date.toLocaleDateString('ru-RU',{weekday:'short'}).replace('.','')}</span>
+      <span class="chef-day-date">${date.getDate()}</span>${meals}</button>`);
+  }
+  container.innerHTML = dayCards.join('');
+}
+
+window.renderChefPanel = () => {
+  const dateStr = chefSelectedDate || getTodayStr();
   const stats = { B:{a:0,k:0}, L:{a:0,k:0}, D:{a:0,k:0} };
   const guestRows = [];
 
   allGuests.forEach(g => {
     if (g.status === 'archived') return;
-    const dayRaw = g.calendar?.find(c => c.date === today);
+    const dayRaw = g.calendar?.find(c => c.date === dateStr);
     const day = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
     if (!day) return;
-    if (day.B) { stats.B.a += day.BA; stats.B.k += day.BK; }
-    if (day.L) { stats.L.a += day.LA; stats.L.k += day.LK; }
-    if (day.D) { stats.D.a += day.DA; stats.D.k += day.DK; }
+    if (day.B) { stats.B.a += toInt(day.BA); stats.B.k += toInt(day.BK); }
+    if (day.L) { stats.L.a += toInt(day.LA); stats.L.k += toInt(day.LK); }
+    if (day.D) { stats.D.a += toInt(day.DA); stats.D.k += toInt(day.DK); }
     const meals = [];
     if (day.B) meals.push(`<span class="val-b">З${toInt(day.BA)}+${toInt(day.BK)}</span>`);
     if (day.L) meals.push(`<span class="val-l">О${toInt(day.LA)}+${toInt(day.LK)}</span>`);
@@ -3243,23 +3321,64 @@ window.renderChefPanel = () => {
     guestRows.push(`<div class="chef-breakdown-row"><span class="label">№${sanitize(g.room)} ${sanitize(g.name)}</span><div class="values">${meals.join('') || '—'}</div></div>`);
   });
 
-  const now = new Date();
+  const selectedDate = parseLocalDate(dateStr) || new Date();
+  const dateLabel = selectedDate.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
   document.getElementById('chefDate').innerText =
-    now.toLocaleDateString('ru-RU', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    selectedDate.toLocaleDateString('ru-RU', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   document.getElementById('chefB_total').innerText = stats.B.a + stats.B.k;
   document.getElementById('chefB_sub').innerText   = `${stats.B.a}в + ${stats.B.k}д`;
   document.getElementById('chefL_total').innerText = stats.L.a + stats.L.k;
   document.getElementById('chefL_sub').innerText   = `${stats.L.a}в + ${stats.L.k}д`;
   document.getElementById('chefD_total').innerText = stats.D.a + stats.D.k;
   document.getElementById('chefD_sub').innerText   = `${stats.D.a}в + ${stats.D.k}д`;
+  document.getElementById('chefGuestsTitle').innerText = `Гости и питание — ${dateLabel}`;
+  document.getElementById('chefCheckoutsTitle').innerText = `Выезды — ${dateLabel}`;
   document.getElementById('chefBreakdown').innerHTML =
-    guestRows.length ? guestRows.join('') : '<div class="chef-breakdown-row"><span class="label">Нет гостей на сегодня</span></div>';
-  const checkouts = allGuests.filter(g => g.status !== 'archived' && g.out === today);
+    guestRows.length ? guestRows.join('') : '<div class="chef-breakdown-row"><span class="label">На эту дату питание не запланировано</span></div>';
+  const checkouts = allGuests.filter(g => g.status !== 'archived' && g.out === dateStr);
   document.getElementById('chefCheckouts').innerHTML = checkouts.length
     ? checkouts.map(g => `<div class="chef-breakdown-row"><span class="label">№${sanitize(g.room)} ${sanitize(g.name)}</span><span style="color:var(--checkout); font-weight:600;">${sanitize(outTimeLabel(g.outTime))}</span></div>`).join('')
     : '<div class="chef-breakdown-row"><span class="label">Выездов нет</span></div>';
+  renderChefWeek();
 };
+function updateChefDate(newDateStr) {
+  if (!newDateStr) return;
+  chefSelectedDate = newDateStr;
+  document.getElementById('chefDatePicker').value = newDateStr;
+  renderChefPanel();
+}
 
+document.getElementById('chefPrevDay').addEventListener('click', () => {
+  const date = parseLocalDate(chefSelectedDate) || new Date();
+  date.setDate(date.getDate() - 1);
+  updateChefDate(formatDateLocal(date));
+});
+
+document.getElementById('chefNextDay').addEventListener('click', () => {
+  const date = parseLocalDate(chefSelectedDate) || new Date();
+  date.setDate(date.getDate() + 1);
+  updateChefDate(formatDateLocal(date));
+});
+
+document.getElementById('chefTodayBtn').addEventListener('click', () => {
+  updateChefDate(getTodayStr());
+});
+
+document.getElementById('chefTomorrowBtn').addEventListener('click', () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  updateChefDate(formatDateLocal(tomorrow));
+});
+
+document.getElementById('chefWeek').addEventListener('click', (event) => {
+  const dayButton = event.target.closest('.chef-day');
+  if (dayButton?.dataset.date) updateChefDate(dayButton.dataset.date);
+});
+
+document.getElementById('chefDatePicker').addEventListener('change', (e) => {
+  const val = e.target.value;
+  if (val) updateChefDate(val);
+});
 // ─── WAITER PANEL ───
 window.renderWaiterPanel = () => {
   const selectedWaiter = document.getElementById('waiterSelector').value;
@@ -3269,7 +3388,7 @@ window.renderWaiterPanel = () => {
     container.innerHTML = '<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Выберите официанта выше</div>';
     return;
   }
-  const today    = getTodayStr();
+ const dateStr = chefSelectedDate || getTodayStr();
   const myTables = allTables.filter(t => t.waiter === selectedWaiter);
   if (!myTables.length) {
     container.innerHTML = `<div style="text-align:center;color:var(--text-dim);margin-top:40px;font-size:14px;">Нет назначенных столов</div>`;
@@ -3344,7 +3463,7 @@ function _renderStatsAndQueue() {
   allGuests.forEach(g => {
     if (g.status === 'archived') return;
     if (g.out === today) checkoutCount++;
-    const dayRaw = g.calendar?.find(c => c.date === today);
+    const dayRaw = g.calendar?.find(c => c.date === dateStr);
     const day    = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
     if (day?.B) { stats.B.a+=day.BA; stats.B.k+=day.BK; }
     if (day?.L) { stats.L.a+=day.LA; stats.L.k+=day.LK; }
@@ -5142,6 +5261,11 @@ window.clearOldAuditLogs = async () => {
 // ─── INIT ───
 document.addEventListener('DOMContentLoaded', () => {
   initSwipeOnQueue();
+  const picker = document.getElementById('chefDatePicker');
+  if (picker) {
+    picker.value = getTodayStr();
+  }
+  if (currentRole === 'chef') renderChefPanel();
 });
 // ========== КОД ВХОДА ==========
 async function signInAdmin(email, password) {
