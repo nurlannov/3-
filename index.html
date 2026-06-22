@@ -9,7 +9,7 @@
 // Если в браузере висит старый SW с другим именем кеша — удаляем его.
 // Это выполняется синхронно в начале страницы до любого другого кода.
 (function() {
-  var CURRENT_CACHE = 'tri-korony-shell-v4';
+  var CURRENT_CACHE = 'tri-korony-shell-v9';
   if (!('serviceWorker' in navigator) || !('caches' in window)) return;
   // Проверяем и чистим устаревшие кеши немедленно
   caches.keys().then(function(keys) {
@@ -3398,8 +3398,8 @@ window.renderWaiterPanel = () => {
   grid.className = 'waiter-grid';
   myTables.forEach(t => {
     const g       = allGuests.find(x => x.id === t.guestId);
-    const summary = getMealSummaryForDay(g, today);
-    const isOut   = g && g.out === today;
+    const summary = getMealSummaryForDay(g, dateStr);
+    const isOut   = g && g.out === dateStr;
     let timerHtml='—', timerClass='';
     if (t.guestId && t.seatedAt && !t.isPending) {
       const mins  = Math.floor((Date.now() - t.seatedAt) / 60000);
@@ -3463,7 +3463,7 @@ function _renderStatsAndQueue() {
   allGuests.forEach(g => {
     if (g.status === 'archived') return;
     if (g.out === today) checkoutCount++;
-    const dayRaw = g.calendar?.find(c => c.date === dateStr);
+    const dayRaw = g.calendar?.find(c => c.date === today);
     const day    = dayRaw ? normalizeCalendarDay(dayRaw, g.adults, g.kids) : null;
     if (day?.B) { stats.B.a+=day.BA; stats.B.k+=day.BK; }
     if (day?.L) { stats.L.a+=day.LA; stats.L.k+=day.LK; }
@@ -3530,6 +3530,19 @@ const updatePendingCount = () => {
 // ─── RENDER TABLES ───
 const renderTables = debounceFrame(_renderTables);
 
+const MAP_MIN_HEIGHT = 1600;
+const MAP_GROW_STEP = 600;
+
+function ensureMapCanvasHeight(requiredBottom = 0) {
+  const canvas = document.getElementById('mapCanvas');
+  const area = document.getElementById('mapArea');
+  if (!canvas || !area) return;
+  const currentHeight = canvas.offsetHeight || MAP_MIN_HEIGHT;
+  const requiredHeight = Math.max(MAP_MIN_HEIGHT, area.clientHeight + 300, requiredBottom + 320);
+  if (requiredHeight <= currentHeight) return;
+  canvas.style.height = `${Math.ceil(requiredHeight / MAP_GROW_STEP) * MAP_GROW_STEP}px`;
+}
+
 function getTableStatusClass(t) {
   if (t.status === 'cleaning') return 'tbl-cleaning';
   if (!t.guestId)              return 'tbl-free';
@@ -3542,7 +3555,11 @@ function _renderTables() {
   const today  = getTodayStr();
   const guestById = new Map(allGuests.map(g => [g.id, g]));
 
-  const visibleIds = new Set(allTables.filter(t => t.zone === currentZone).map(t => t.id));
+  const zoneTables = allTables.filter(t => t.zone === currentZone);
+  const lowestTableY = zoneTables.reduce((max, t) => Math.max(max, toInt(t.y) + 110), 0);
+  ensureMapCanvasHeight(lowestTableY);
+
+  const visibleIds = new Set(zoneTables.map(t => t.id));
   tableNodeMap.forEach((el, id) => {
     if (!visibleIds.has(id)) { el.remove(); tableNodeMap.delete(id); }
   });
@@ -4261,6 +4278,14 @@ function handleTableInteraction(e, el, data) {
     const area     = document.getElementById('mapArea');
     const canvas   = document.getElementById('mapCanvas');
     const areaRect = area.getBoundingClientRect();
+
+    const edgeDistance = areaRect.bottom - cy;
+    if (edgeDistance < 90) {
+      ensureMapCanvasHeight(area.scrollTop + area.clientHeight + 400);
+      const scrollSpeed = Math.max(10, Math.min(32, (90 - edgeDistance) * 0.35));
+      area.scrollTop += scrollSpeed;
+    }
+
     const newX = cx - areaRect.left - offsetX + area.scrollLeft;
     const newY = cy - areaRect.top  - offsetY + area.scrollTop;
     el.style.left = Math.max(0, Math.min(newX, canvas.offsetWidth  - el.offsetWidth))  + 'px';
