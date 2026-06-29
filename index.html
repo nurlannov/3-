@@ -9,7 +9,7 @@
 // Если в браузере висит старый SW с другим именем кеша — удаляем его.
 // Это выполняется синхронно в начале страницы до любого другого кода.
 (function() {
-  var CURRENT_CACHE = 'tri-korony-shell-v9';
+  var CURRENT_CACHE = 'tri-korony-shell-v15';
   if (!('serviceWorker' in navigator) || !('caches' in window)) return;
   // Проверяем и чистим устаревшие кеши немедленно
   caches.keys().then(function(keys) {
@@ -452,6 +452,7 @@ body {
   box-shadow: 0 0 0 3px rgba(201,150,58,0.4), 0 4px 20px rgba(201,150,58,0.2);
 }
 
+.table.hold-pending{box-shadow:0 0 0 3px rgba(201,150,58,.28),0 4px 20px rgba(0,0,0,.4)}
 .table.hold-active {
   transform: scale(1.1);
   box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 2px var(--gold);
@@ -960,6 +961,20 @@ textarea { resize: vertical; min-height: 60px; }
   .chef-calendar-controls .q-btn { padding:7px 9px; font-size:11px; }
   .chef-calendar-controls input[type=date] { max-width:145px; font-size:12px; }
 }
+
+/* ─── MEALS PANEL ─── */
+#mealsPanel{display:none;flex:1;overflow-y:auto;background:var(--navy);padding:18px;flex-direction:column;gap:14px}
+#mealsPanel::-webkit-scrollbar{width:4px}#mealsPanel::-webkit-scrollbar-thumb{background:var(--navy-4);border-radius:4px}
+.meals-toolbar,.meals-filters,.meal-counters,.meal-tabs{width:min(980px,100%);margin:0 auto}
+.meals-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--navy-2);border:1px solid var(--glass-border);border-radius:var(--radius);padding:14px 16px;flex-wrap:wrap}
+.meals-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold);line-height:1}.meals-subtitle{font-size:12px;color:var(--text-muted);margin-top:4px}
+.meals-date-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.meals-date-controls input[type=date]{width:auto;margin:0;min-height:38px;color-scheme:dark}.meal-mini-btn{border:1px solid var(--glass-border);border-radius:10px;background:var(--navy-3);color:var(--text);padding:9px 12px;cursor:pointer;font-weight:700}.meal-mini-btn:hover{border-color:var(--gold);color:var(--gold)}
+.meal-counters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.meal-counter{background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid var(--glass-border);border-radius:16px;padding:13px 14px;min-width:0}.meal-counter span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)}.meal-counter b{display:block;margin-top:4px;font-size:22px;color:var(--text)}.meal-counter small{display:block;margin-top:2px;color:var(--text-dim)}.meal-counter.breakfast b{color:#F1C40F}.meal-counter.lunch b{color:var(--success)}.meal-counter.dinner b{color:var(--danger)}
+.meal-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}.meal-tab-btn{min-height:42px;border:1px solid var(--glass-border);border-radius:999px;background:var(--navy-2);color:var(--text-muted);padding:9px 15px;white-space:nowrap;cursor:pointer;font-weight:700}.meal-tab-btn.active{border-color:var(--gold);background:rgba(201,150,58,.14);color:var(--gold)}
+.meals-filters{display:grid;grid-template-columns:minmax(220px,1fr) repeat(3,auto);gap:8px;align-items:center;background:var(--navy-2);border:1px solid var(--glass-border);border-radius:var(--radius);padding:12px}.meals-filters input[type=text]{margin:0}.meal-check{display:flex;align-items:center;gap:7px;color:var(--text-muted);font-size:12px;white-space:nowrap}.meal-check input{width:auto;margin:0}
+.meal-list{width:min(980px,100%);margin:0 auto;display:grid;gap:12px}.meal-group{display:grid;gap:9px}.meal-group-title{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-dim);margin:6px 2px 0}.meal-guest-card{background:var(--navy-2);border:1px solid var(--glass-border);border-radius:16px;padding:14px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(150px,.85fr);gap:12px;align-items:start;box-shadow:0 14px 34px rgba(0,0,0,.18)}.meal-guest-card.checkout{border-color:rgba(251,146,60,.45);background:linear-gradient(145deg,rgba(251,146,60,.1),rgba(255,255,255,.03))}.meal-room{font-size:12px;color:var(--gold);font-weight:800;letter-spacing:.5px}.meal-name{font-size:18px;font-weight:800;color:var(--text);margin-top:2px}.meal-meta{margin-top:5px;color:var(--text-muted);font-size:13px}.meal-selected{display:inline-flex;margin-top:10px;padding:7px 10px;border-radius:999px;background:rgba(201,150,58,.12);color:var(--gold);font-weight:800;font-size:12px}.meal-card-side{display:grid;gap:6px;color:var(--text-muted);font-size:12px}.meal-card-side b{color:var(--text)}.meal-note{grid-column:1/-1;padding:9px 10px;border-radius:12px;background:rgba(201,150,58,.08);color:var(--text-muted);font-size:12px;line-height:1.45;white-space:pre-wrap}.meal-empty{padding:28px;text-align:center;color:var(--text-dim);background:var(--navy-2);border:1px solid var(--glass-border);border-radius:var(--radius)}.meal-counter-card{background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid var(--glass-border);border-radius:16px;padding:13px 14px;min-width:0}.meal-counter-card span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)}.meal-counter-card strong{display:block;margin-top:4px;font-size:22px;color:var(--text)}.meal-counter-card small{display:block;margin-top:2px;color:var(--text-dim)}.meal-counter-card.breakfast strong{color:#F1C40F}.meal-counter-card.lunch strong{color:var(--success)}.meal-counter-card.dinner strong{color:var(--danger)}.meal-section{display:grid;gap:9px}.meal-section h3{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-dim);margin:6px 2px 0}.meal-card-main{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;min-width:0}.meal-card-main h4{margin:0;color:var(--text);font-size:18px;line-height:1.15}.meal-card-main p{margin:5px 0 0;color:var(--text-muted);font-size:13px}.meal-card-meal{display:grid;gap:7px;justify-items:start}.meal-card-meal strong{color:var(--text);font-size:14px}.meal-card-meal small{color:var(--text-dim)}.meal-pill{display:inline-flex;padding:7px 10px;border-radius:999px;background:rgba(201,150,58,.12);color:var(--gold);font-weight:800;font-size:12px}.meal-pill.breakfast{color:#F1C40F;background:rgba(241,196,15,.12)}.meal-pill.lunch{color:var(--success);background:rgba(52,199,89,.12)}.meal-pill.dinner{color:var(--danger);background:rgba(255,90,95,.12)}.meal-card-meta{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;color:var(--text-muted);font-size:12px}.meal-card-meta span{border:1px solid var(--glass-border);border-radius:999px;padding:5px 8px;background:rgba(255,255,255,.03)}.meal-status.waiting{color:var(--gold)}.meal-status.seated{color:var(--success)}.meal-status.checkout{color:#fb923c}.meal-guest-card.seated{border-color:rgba(52,199,89,.28)}.meal-guest-card.waiting{border-color:rgba(201,150,58,.24)}
+
+@media(max-width:768px){#mealsPanel{padding:12px 10px 76px}.meals-toolbar{align-items:flex-start}.meals-title{font-size:24px}.meal-counters{grid-template-columns:1fr}.meals-filters{grid-template-columns:1fr}.meal-check{min-height:34px}.meal-guest-card{grid-template-columns:1fr;padding:15px}.meal-tabs{padding-bottom:6px}.meal-tab-btn{min-width:112px}}
 
 /* ─── WAITER PANEL ─── */
 #waiterPanel {
@@ -2102,6 +2117,7 @@ textarea {
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 24px 56px rgba(0,0,0,0.46), 0 0 0 5px rgba(242,199,110,0.08), inset 0 1px 0 rgba(255,255,255,0.25);
 }
+.table.hold-pending{box-shadow:0 0 0 3px rgba(201,150,58,.28),0 4px 20px rgba(0,0,0,.4)}
 .table.hold-active {
   transform: scale(1.1);
   box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 3px var(--gold), 0 0 36px var(--gold-glow);
@@ -2391,10 +2407,13 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
       <button class="theme-toggle-btn" id="themeToggleBtn" title="Переключить тему">🌙</button>
     </div>
     <button class="role-tab active" id="roleAdmin"  onclick="switchRole('admin')">
-      <span class="tab-icon">👑</span> Администратор
+      <span class="tab-icon">🗺️</span> Карта столов
     </button>
     <button class="role-tab" id="roleWaiter" onclick="switchRole('waiter')">
       <span class="tab-icon">👔</span> Официант
+    </button>
+    <button class="role-tab" id="roleMeals" onclick="switchRole('meals')">
+      <span class="tab-icon">🍽</span> Питание
     </button>
     <button class="role-tab" id="roleChef" onclick="switchRole('chef')">
       <span class="tab-icon">👨‍🍳</span> Повар
@@ -2453,7 +2472,7 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
     <button class="hbtn" onclick="showAuditLog()">📋 <span>Журнал</span></button>
     <button class="hbtn" onclick="showArchive()">📜 <span>Архив</span></button>
     <button class="hbtn gold" onclick="addNewTable()">+ <span>Стол</span></button>
-    <button class="hbtn success" onclick="openGuestModal()">+ <span>Гость</span></button>
+    <button class="hbtn success" onclick="location.href='/admin.html'">⚙ <span>Админ-панель</span></button>
     <button class="hbtn" id="notifBtn" onclick="requestPushPermission()" title="Push-уведомления">
       🔔 <span>Уведомления</span>
     </button>
@@ -2536,7 +2555,35 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
   <div id="waiterTablesList"></div>
 </div>
 
-<div class="map-hint" id="mapHint">Удерживай стол 0.4с чтобы переместить · Листай карту рукой</div>
+
+<!-- MEALS PANEL -->
+<div id="mealsPanel">
+  <div class="meals-toolbar">
+    <div>
+      <div class="meals-title">Питание гостей</div>
+      <div class="meals-subtitle" id="mealsDateLabel">Сегодня</div>
+    </div>
+    <div class="meals-date-controls">
+      <input type="date" id="mealsDatePicker" aria-label="Дата питания">
+      <button class="meal-mini-btn" id="mealsTodayBtn" type="button">Сегодня</button>
+    </div>
+  </div>
+  <div class="meal-counters" id="mealCounters"></div>
+  <div class="meal-tabs" id="mealTabs">
+    <button class="meal-tab-btn active" type="button" data-meal-tab="all">Все</button>
+    <button class="meal-tab-btn" type="button" data-meal-tab="B">Завтрак</button>
+    <button class="meal-tab-btn" type="button" data-meal-tab="L">Обед</button>
+    <button class="meal-tab-btn" type="button" data-meal-tab="D">Ужин</button>
+  </div>
+  <div class="meals-filters">
+    <input type="text" id="mealSearch" placeholder="Поиск: комната или имя">
+    <label class="meal-check"><input type="checkbox" id="mealOnlyNoTable"> без стола</label>
+    <label class="meal-check"><input type="checkbox" id="mealOnlyCheckout"> выезд сегодня</label>
+    <label class="meal-check"><input type="checkbox" id="mealOnlyNotes"> с заметками</label>
+  </div>
+  <div class="meal-list" id="mealGuestList"></div>
+</div>
+<div class="map-hint" id="mapHint">Зажмите стол 0,6 сек для перемещения. Свайп по пустому месту двигает карту, щипок меняет масштаб.</div>
 <div id="toast"></div>
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
@@ -2555,9 +2602,9 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
 <div class="fab-container" id="fabContainer">
   <div class="fab-backdrop" id="fabBackdrop"></div>
   <div class="fab-menu" id="fabMenu">
-    <div class="fab-item" id="fabAddGuest">
-      <span class="fab-icon">👤</span>
-      <span>Добавить гостя</span>
+    <div class="fab-item" id="fabAdminPanel">
+      <span class="fab-icon">⚙</span>
+      <span>Админ-панель</span>
     </div>
     <div class="fab-item" id="fabAddTable">
       <span class="fab-icon">🪑</span>
@@ -2575,11 +2622,15 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
 <div class="bottom-nav" id="bottomNav">
   <button class="bottom-nav-btn active" data-role="admin">
     <span class="bn-icon">👑</span>
-    <span>Админ</span>
+    <span>Карта</span>
   </button>
   <button class="bottom-nav-btn" data-role="waiter">
     <span class="bn-icon">👔</span>
     <span>Официант</span>
+  </button>
+  <button class="bottom-nav-btn" data-role="meals">
+    <span class="bn-icon">🍽</span>
+    <span>Питание</span>
   </button>
   <button class="bottom-nav-btn" data-role="chef">
     <span class="bn-icon">👨‍🍳</span>
@@ -2892,7 +2943,7 @@ function hideApp() {
 // ─── AUDIT LOG ───
 async function logAction(action, details = '', targetId = null) {
   try {
-    await addDoc(collection(null, 'audit_logs'), {
+    await addDoc(collection(db, 'audit_logs'), {
       action, details, targetId: targetId || null, timestamp: Date.now()
     });
   } catch (err) {
@@ -2964,6 +3015,8 @@ let guestCalendar = [];
 let currentListMode = '';
 let currentListItems = [];
 let currentRole = 'admin';
+let mealSelectedDate = getTodayStr();
+let mealActiveTab = 'all';
 let lastTapX = 0;
 let lastTapY = 0;
 
@@ -3230,6 +3283,7 @@ window.switchRole = (role) => {
   const adminLayout = document.getElementById('adminLayout');
   const chefPanel   = document.getElementById('chefPanel');
   const waiterPanel = document.getElementById('waiterPanel');
+  const mealsPanel  = document.getElementById('mealsPanel');
   const statsBar    = document.getElementById('statsBar');
   const mapHint     = document.getElementById('mapHint');
 
@@ -3237,6 +3291,7 @@ window.switchRole = (role) => {
   adminLayout.style.display = 'none';
   chefPanel.style.display   = 'none';
   waiterPanel.style.display = 'none';
+  if (mealsPanel) mealsPanel.style.display = 'none';
   statsBar.style.display    = 'none';
   mapHint.style.display     = 'none';
 
@@ -3254,6 +3309,13 @@ window.switchRole = (role) => {
     waiterPanel.style.flexDirection = 'column';
     statsBar.style.display = 'flex';
     renderWaiterPanel();
+  } else if (role === 'meals') {
+    if (mealsPanel) {
+      mealsPanel.style.display = 'flex';
+      mealsPanel.style.flexDirection = 'column';
+    }
+    statsBar.style.display = 'flex';
+    renderMealsPanel();
   }
 
   if (typeof updateBottomNav === 'function') updateBottomNav(role);
@@ -3379,6 +3441,171 @@ document.getElementById('chefDatePicker').addEventListener('change', (e) => {
   const val = e.target.value;
   if (val) updateChefDate(val);
 });
+// ─── MEALS PANEL ───
+const MEAL_INFO = {
+  B: { label:'Завтрак', adult:'BA', child:'BK', className:'breakfast', time:'08:00-10:00' },
+  L: { label:'Обед', adult:'LA', child:'LK', className:'lunch', time:'12:30-14:30' },
+  D: { label:'Ужин', adult:'DA', child:'DK', className:'dinner', time:'18:30-20:30' }
+};
+
+function getMealPortion(day, meal) {
+  const meta = MEAL_INFO[meal];
+  if (!day || !meta || !day[meal]) return null;
+  const adults = toInt(day[meta.adult]);
+  const kids = toInt(day[meta.child]);
+  return { adults, kids, total: adults + kids };
+}
+
+function getGuestTable(guestId) {
+  return allTables.find(t => t.guestId === guestId) || null;
+}
+
+function mealStatusLabel(guest, table, dateStr) {
+  if (guest?.out === dateStr) return { text:'Выезд сегодня', className:'checkout' };
+  if (table?.isPending) return { text:'Ожидает посадки', className:'waiting' };
+  if (table?.guestId) return { text:'За столом', className:'seated' };
+  return { text:'Ожидает', className:'waiting' };
+}
+
+function getMealStatsForDate(dateStr) {
+  const stats = { B:{a:0,k:0,total:0}, L:{a:0,k:0,total:0}, D:{a:0,k:0,total:0} };
+  allGuests.forEach(g => {
+    if (g.status === 'archived') return;
+    const raw = g.calendar?.find(c => c.date === dateStr);
+    if (!raw) return;
+    const day = normalizeCalendarDay(raw, g.adults, g.kids);
+    ['B','L','D'].forEach(meal => {
+      const portion = getMealPortion(day, meal);
+      if (!portion) return;
+      stats[meal].a += portion.adults;
+      stats[meal].k += portion.kids;
+      stats[meal].total += portion.total;
+    });
+  });
+  return stats;
+}
+
+function matchesMealFilters(guest, table, dateStr) {
+  const query = (document.getElementById('mealSearch')?.value || '').trim().toLowerCase();
+  const noTable = !!document.getElementById('mealOnlyNoTable')?.checked;
+  const checkout = !!document.getElementById('mealOnlyCheckout')?.checked;
+  const notes = !!document.getElementById('mealOnlyNotes')?.checked;
+  if (query) {
+    const haystack = [guest.room, guest.name, guest.notes, table?.number, table?.waiter]
+      .filter(Boolean).join(' ').toLowerCase();
+    if (!haystack.includes(query)) return false;
+  }
+  if (noTable && table) return false;
+  if (checkout && guest.out !== dateStr) return false;
+  if (notes && !(guest.notes && guest.notes.trim())) return false;
+  return true;
+}
+
+function buildMealEntries(dateStr, meal) {
+  const entries = [];
+  allGuests.forEach(guest => {
+    if (guest.status === 'archived') return;
+    const raw = guest.calendar?.find(c => c.date === dateStr);
+    if (!raw) return;
+    const day = normalizeCalendarDay(raw, guest.adults, guest.kids);
+    const table = getGuestTable(guest.id);
+    if (!matchesMealFilters(guest, table, dateStr)) return;
+    const meals = meal === 'all' ? ['B','L','D'] : [meal];
+    meals.forEach(mealKey => {
+      const portion = getMealPortion(day, mealKey);
+      if (!portion || portion.total <= 0) return;
+      entries.push({ guest, table, day, meal:mealKey, portion });
+    });
+  });
+  entries.sort((a, b) => {
+    const roomA = String(a.guest.room || '').localeCompare(String(b.guest.room || ''), 'ru', { numeric:true });
+    if (roomA) return roomA;
+    return String(a.guest.name || '').localeCompare(String(b.guest.name || ''), 'ru');
+  });
+  return entries;
+}
+
+function renderMealCard(entry, dateStr) {
+  const meta = MEAL_INFO[entry.meal];
+  const guest = entry.guest;
+  const table = entry.table;
+  const status = mealStatusLabel(guest, table, dateStr);
+  const note = guest.notes && guest.notes.trim() ? '<div class="meal-note">' + sanitize(guest.notes.trim()) + '</div>' : '';
+  const tableText = table ? ('Стол ' + sanitize(String(table.number))) : 'Стол не назначен';
+  const waiterText = table?.waiter ? ('Официант: ' + sanitize(table.waiter)) : 'Официант не назначен';
+  return '<article class="meal-guest-card ' + status.className + '">' +
+    '<div class="meal-card-main">' +
+      '<div class="meal-room">№' + sanitize(String(guest.room || '')) + '</div>' +
+      '<div><h4>' + sanitize(guest.name || 'Без имени') + '</h4>' +
+      '<p>' + toInt(guest.adults) + ' взрослых · ' + toInt(guest.kids) + ' детей</p></div>' +
+    '</div>' +
+    '<div class="meal-card-meal"><span class="meal-pill ' + meta.className + '">' + meta.label + '</span>' +
+      '<strong>' + entry.portion.adults + ' взр. + ' + entry.portion.kids + ' дет.</strong>' +
+      '<small>' + meta.time + '</small></div>' +
+    '<div class="meal-card-meta"><span>' + tableText + '</span><span>' + waiterText + '</span>' +
+      '<span class="meal-status ' + status.className + '">' + status.text + '</span></div>' + note +
+  '</article>';
+}
+
+window.renderMealsPanel = () => {
+  const dateStr = mealSelectedDate || getTodayStr();
+  const picker = document.getElementById('mealsDatePicker');
+  const label = document.getElementById('mealsDateLabel');
+  const counters = document.getElementById('mealCounters');
+  const tabs = document.getElementById('mealTabs');
+  const list = document.getElementById('mealGuestList');
+  if (!list) return;
+  if (picker) picker.value = dateStr;
+  if (label) label.textContent = 'Дата: ' + shortDate(dateStr);
+  const stats = getMealStatsForDate(dateStr);
+  if (counters) {
+    counters.innerHTML = ['B','L','D'].map(meal => {
+      const meta = MEAL_INFO[meal];
+      const s = stats[meal];
+      return '<div class="meal-counter-card ' + meta.className + '"><span>' + meta.label + '</span><strong>' +
+        s.total + '</strong><small>' + s.a + ' взрослых · ' + s.k + ' детей</small></div>';
+    }).join('');
+  }
+  tabs?.querySelectorAll('[data-meal-tab]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mealTab === mealActiveTab);
+  });
+  const active = mealActiveTab || 'all';
+  if (active === 'all') {
+    list.innerHTML = ['B','L','D'].map(meal => {
+      const entries = buildMealEntries(dateStr, meal);
+      const body = entries.length ? entries.map(entry => renderMealCard(entry, dateStr)).join('') : '<div class="meal-empty">На этот приём пищи гостей нет</div>';
+      return '<section class="meal-section"><h3>' + MEAL_INFO[meal].label + '</h3>' + body + '</section>';
+    }).join('');
+    return;
+  }
+  const entries = buildMealEntries(dateStr, active);
+  list.innerHTML = entries.length ? entries.map(entry => renderMealCard(entry, dateStr)).join('') : '<div class="meal-empty">По выбранным условиям гостей нет</div>';
+};
+
+const scheduleMealsPanelRender = debounce(() => {
+  if (currentRole === 'meals') renderMealsPanel();
+}, 120);
+
+document.getElementById('mealsDatePicker')?.addEventListener('change', (event) => {
+  if (!event.target.value) return;
+  mealSelectedDate = event.target.value;
+  renderMealsPanel();
+});
+document.getElementById('mealsTodayBtn')?.addEventListener('click', () => {
+  mealSelectedDate = getTodayStr();
+  renderMealsPanel();
+});
+document.getElementById('mealTabs')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-meal-tab]');
+  if (!button) return;
+  mealActiveTab = button.dataset.mealTab || 'all';
+  renderMealsPanel();
+});
+document.getElementById('mealSearch')?.addEventListener('input', scheduleMealsPanelRender);
+['mealOnlyNoTable','mealOnlyCheckout','mealOnlyNotes'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', scheduleMealsPanelRender);
+});
+
 // ─── WAITER PANEL ───
 window.renderWaiterPanel = () => {
   const selectedWaiter = document.getElementById('waiterSelector').value;
@@ -3507,6 +3734,7 @@ function _renderStatsAndQueue() {
 
   if (currentRole === 'chef')   renderChefPanel();
   if (currentRole === 'waiter') renderWaiterPanel();
+  if (currentRole === 'meals')  renderMealsPanel();
 
   if (checkoutCount > 0 && 'Notification' in window && Notification.permission === 'granted') {
     if (!window._checkoutLocalNotified) {
@@ -3626,6 +3854,7 @@ function _renderTables() {
         updatePendingCount();
         if (currentRole === 'waiter') renderWaiterPanel();
         if (currentRole === 'chef') renderChefPanel();
+        if (currentRole === 'meals') renderMealsPanel();
       }
     } catch (err) { console.warn('[Offline] Не удалось загрузить кэш:', err); }
   }
@@ -3662,6 +3891,7 @@ onSnapshot(collection(db, 'tables'), (sn) => {
   updatePendingCount();
   renderTables();
   if (currentRole === 'waiter') renderWaiterPanel();
+  if (currentRole === 'meals') renderMealsPanel();
 }, (err) => { console.error('Firestore tables error:', err); showToast('❌ Ошибка БД столов: ' + err.message); });
 } // end startFirestoreListeners
 
@@ -4249,81 +4479,124 @@ window.addNewTable = async () => {
   }
 };
 
-// ─── TABLE INTERACTION ───
-function handleTableInteraction(e, el, data) {
-  if (e.type === 'mousedown') e.preventDefault();
-  const startX = e.clientX ?? e.touches?.[0].clientX ?? 0;
-  const startY = e.clientY ?? e.touches?.[0].clientY ?? 0;
-  const rect   = el.getBoundingClientRect();
-  const offsetX = startX - rect.left;
-  const offsetY = startY - rect.top;
-  let holdTimer=null, isDragging=false, movedEnough=false;
+// TABLE INTERACTION
+const TAP_MOVE_THRESHOLD = 10;
+const TABLE_LONG_PRESS_MS = 650;
+const SUPPRESS_CLICK_MS = 450;
+let isPanning = false;
+let isPinching = false;
+let isLongPressing = false;
+let isDraggingTable = false;
+let suppressClickUntil = 0;
+const tablePositionSaveTimers = new Map();
+function suppressClicks(ms = SUPPRESS_CLICK_MS) { suppressClickUntil = Date.now() + ms; }
+function shouldSuppressInteraction() { return Date.now() < suppressClickUntil || isPanning || isPinching || isDraggingTable; }
+function saveTablePositionDebounced(id, x, y) {
+  clearTimeout(tablePositionSaveTimers.get(id));
+  tablePositionSaveTimers.set(id, setTimeout(async () => {
+    try { await updateDoc(doc(db,'tables',id), { x, y }); }
+    catch(err) { console.error('Позиция не сохранена:', err); }
+    finally { tablePositionSaveTimers.delete(id); }
+  }, 260));
+}
+function eventPoint(evt) {
+  const point = evt.touches?.[0] || evt.changedTouches?.[0] || evt;
+  return { x: point?.clientX || 0, y: point?.clientY || 0 };
+}
 
+function handleTableInteraction(e, el, data) {
+  if (e.touches && e.touches.length > 1) { isPinching = true; suppressClicks(); return; }
+  if (shouldSuppressInteraction()) return;
+  if (e.cancelable) e.preventDefault();
+  const start = eventPoint(e);
+  const rect = el.getBoundingClientRect();
+  const offsetX = start.x - rect.left;
+  const offsetY = start.y - rect.top;
+  let holdTimer = null;
+  let movedEnough = false;
+  let pointerMoved = false;
+  const area = document.getElementById('mapArea');
+  const canvas = document.getElementById('mapCanvas');
+
+  const clearHold = () => {
+    if (holdTimer) clearTimeout(holdTimer);
+    holdTimer = null;
+    isLongPressing = false;
+    el.classList.remove('hold-pending');
+  };
+
+  isLongPressing = true;
+  el.classList.add('hold-pending');
   holdTimer = setTimeout(() => {
-    isDragging = true;
+    isDraggingTable = true;
+    isLongPressing = false;
+    el.classList.remove('hold-pending');
     el.classList.add('hold-active');
-    document.getElementById('mapArea').classList.add('dragging-table');
+    area.classList.add('dragging-table');
+    suppressClicks();
     if (navigator.vibrate) navigator.vibrate(40);
-  }, 400);
+  }, TABLE_LONG_PRESS_MS);
 
   const onMove = (m) => {
-    const cx = m.clientX ?? m.touches?.[0].clientX ?? 0;
-    const cy = m.clientY ?? m.touches?.[0].clientY ?? 0;
-    const dx = Math.abs(cx - startX);
-    const dy = Math.abs(cy - startY);
-    if (!isDragging && (dx > 12 || dy > 12)) { clearTimeout(holdTimer); holdTimer = null; return; }
-    if (!isDragging) return;
+    const point = eventPoint(m);
+    const dx = Math.abs(point.x - start.x);
+    const dy = Math.abs(point.y - start.y);
+    if (dx > TAP_MOVE_THRESHOLD || dy > TAP_MOVE_THRESHOLD) pointerMoved = true;
+    if (!isDraggingTable && pointerMoved) { clearHold(); suppressClicks(); return; }
+    if (!isDraggingTable) return;
     if (m.cancelable) m.preventDefault();
     movedEnough = true;
-    const area     = document.getElementById('mapArea');
-    const canvas   = document.getElementById('mapCanvas');
     const areaRect = area.getBoundingClientRect();
-
-    const edgeDistance = areaRect.bottom - cy;
+    const edgeDistance = areaRect.bottom - point.y;
     if (edgeDistance < 90) {
       ensureMapCanvasHeight(area.scrollTop + area.clientHeight + 400);
       const scrollSpeed = Math.max(10, Math.min(32, (90 - edgeDistance) * 0.35));
       area.scrollTop += scrollSpeed;
     }
-
-    const newX = cx - areaRect.left - offsetX + area.scrollLeft;
-    const newY = cy - areaRect.top  - offsetY + area.scrollTop;
-    el.style.left = Math.max(0, Math.min(newX, canvas.offsetWidth  - el.offsetWidth))  + 'px';
-    el.style.top  = Math.max(0, Math.min(newY, canvas.offsetHeight - el.offsetHeight)) + 'px';
+    const newX = point.x - areaRect.left - offsetX + area.scrollLeft;
+    const newY = point.y - areaRect.top - offsetY + area.scrollTop;
+    el.style.left = Math.max(0, Math.min(newX, canvas.offsetWidth - el.offsetWidth)) + 'px';
+    el.style.top = Math.max(0, Math.min(newY, canvas.offsetHeight - el.offsetHeight)) + 'px';
   };
 
-  const onEnd = async () => {
-    clearTimeout(holdTimer);
+  const onEnd = () => {
+    clearHold();
     document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup',   onEnd);
+    document.removeEventListener('mouseup', onEnd);
     document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('touchend',  onEnd);
+    document.removeEventListener('touchend', onEnd);
+    document.removeEventListener('touchcancel', onEnd);
     el.classList.remove('hold-active');
-    document.getElementById('mapArea').classList.remove('dragging-table');
-    if (isDragging && movedEnough) {
-      try {
-        await updateDoc(doc(db,'tables',data.id), { x: parseInt(el.style.left), y: parseInt(el.style.top) });
-      } catch(err) { console.error('Позиция не сохранена:', err); }
-    } else if (!isDragging) {
-      openTableModal(data.id, data);
+    area.classList.remove('dragging-table');
+    const wasDragging = isDraggingTable;
+    isDraggingTable = false;
+    isLongPressing = false;
+    if (wasDragging && movedEnough) {
+      suppressClicks();
+      saveTablePositionDebounced(data.id, parseInt(el.style.left, 10) || 0, parseInt(el.style.top, 10) || 0);
+      return;
     }
+    if (pointerMoved) { suppressClicks(); return; }
+    if (!shouldSuppressInteraction()) openTableModal(data.id, data);
   };
 
   document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup',   onEnd);
+  document.addEventListener('mouseup', onEnd);
   document.addEventListener('touchmove', onMove, { passive: false });
-  document.addEventListener('touchend',  onEnd);
+  document.addEventListener('touchend', onEnd);
+  document.addEventListener('touchcancel', onEnd);
 }
 
-// ─── MAP PAN & PINCH ───
+// MAP PAN & PINCH
 const mapArea = document.getElementById('mapArea');
 const canvas  = document.getElementById('mapCanvas');
-let isPanning = false, panStartX, panStartY, panScrollL, panScrollT;
+let panStartX = 0, panStartY = 0, panScrollL = 0, panScrollT = 0;
 let currentScale = 1;
 const MIN_SCALE = 0.4, MAX_SCALE = 2.5;
 let pinchStartDist=0, pinchStartScale=1, pinchMidX=0, pinchMidY=0;
 let pinchStartScrollLeft=0, pinchStartScrollTop=0;
 let lastTapTime=0;
+let panMoved = false;
 
 function getTouchDistance(touches) {
   const dx = touches[0].clientX - touches[1].clientX;
@@ -4333,11 +4606,37 @@ function getTouchDistance(touches) {
 function getTouchMidpoint(touches) {
   return { x:(touches[0].clientX+touches[1].clientX)/2, y:(touches[0].clientY+touches[1].clientY)/2 };
 }
+function startMapPan(clientX, clientY) {
+  isPanning = true;
+  panMoved = false;
+  panStartX = clientX;
+  panStartY = clientY;
+  panScrollL = mapArea.scrollLeft;
+  panScrollT = mapArea.scrollTop;
+  mapArea.style.cursor = 'grabbing';
+}
+function moveMapPan(clientX, clientY, evt) {
+  if (!isPanning) return;
+  const dx = clientX - panStartX;
+  const dy = clientY - panStartY;
+  if (Math.abs(dx) > TAP_MOVE_THRESHOLD || Math.abs(dy) > TAP_MOVE_THRESHOLD) panMoved = true;
+  if (panMoved && evt?.cancelable) evt.preventDefault();
+  mapArea.scrollLeft = panScrollL - dx;
+  mapArea.scrollTop = panScrollT - dy;
+}
+function stopMapPan() {
+  if (isPanning && panMoved) suppressClicks();
+  isPanning = false;
+  panMoved = false;
+  mapArea.style.cursor = 'grab';
+}
 
 mapArea.addEventListener('touchstart', (e) => {
   if (e.target.closest('.table')) return;
   if (e.touches.length === 2) {
     e.preventDefault();
+    isPinching = true;
+    stopMapPan();
     const t = e.touches;
     pinchStartDist = getTouchDistance(t);
     pinchStartScale = currentScale;
@@ -4345,8 +4644,8 @@ mapArea.addEventListener('touchstart', (e) => {
     pinchMidX = mid.x; pinchMidY = mid.y;
     pinchStartScrollLeft = mapArea.scrollLeft;
     pinchStartScrollTop  = mapArea.scrollTop;
-    isPanning = false;
     mapArea.style.cursor = 'default';
+    suppressClicks();
   } else if (e.touches.length === 1) {
     const touch = e.touches[0];
     const now = Date.now();
@@ -4354,17 +4653,20 @@ mapArea.addEventListener('touchstart', (e) => {
       e.preventDefault();
       handleDoubleTap(touch.clientX, touch.clientY, e.target);
       lastTapTime = 0;
+      suppressClicks();
       return;
     }
     lastTapTime = now;
     lastTapX = touch.clientX;
     lastTapY = touch.clientY;
+    startMapPan(touch.clientX, touch.clientY);
   }
 }, { passive: false });
 
 mapArea.addEventListener('touchmove', (e) => {
   if (e.touches.length === 2) {
     e.preventDefault();
+    isPinching = true;
     if (pinchStartDist === 0) return;
     const t = e.touches;
     const newDist = getTouchDistance(t);
@@ -4375,14 +4677,20 @@ mapArea.addEventListener('touchmove', (e) => {
     mapArea.scrollLeft = pinchMidX - (pinchMidX - pinchStartScrollLeft) * sf;
     mapArea.scrollTop  = pinchMidY - (pinchMidY - pinchStartScrollTop) * sf;
     currentScale = newScale;
+    suppressClicks();
+  } else if (e.touches.length === 1 && isPanning) {
+    moveMapPan(e.touches[0].clientX, e.touches[0].clientY, e);
   } else if (pinchStartDist !== 0) {
     pinchStartDist = 0;
   }
 }, { passive: false });
 
 mapArea.addEventListener('touchend', (e) => {
-  if (e.touches.length < 2) pinchStartDist = 0;
+  if (pinchStartDist && isPinching) suppressClicks();
+  if (e.touches.length < 2) { pinchStartDist = 0; isPinching = false; }
+  if (!e.touches.length) stopMapPan();
 });
+mapArea.addEventListener('touchcancel', () => { pinchStartDist = 0; isPinching = false; stopMapPan(); suppressClicks(); });
 
 function handleDoubleTap(clientX, clientY, target) {
   const tableEl = target.closest('.table');
@@ -4395,13 +4703,12 @@ function handleDoubleTap(clientX, clientY, target) {
       behavior: 'smooth'
     });
   } else {
-    const mapRect  = mapArea.getBoundingClientRect();
     const newScale = currentScale >= 1.5 ? 1 : 2;
-    const sf       = newScale / currentScale;
+    const sf = newScale / currentScale;
     canvas.style.transform = `scale(${newScale})`;
     canvas.style.transformOrigin = '0 0';
     mapArea.scrollLeft = clientX - (clientX - mapArea.scrollLeft) * sf;
-    mapArea.scrollTop  = clientY - (clientY - mapArea.scrollTop)  * sf;
+    mapArea.scrollTop  = clientY - (clientY - mapArea.scrollTop) * sf;
     currentScale = newScale;
   }
 }
@@ -4411,18 +4718,12 @@ canvas.style.transformOrigin = '0 0';
 
 mapArea.addEventListener('mousedown', (e) => {
   if (e.target.closest('.table')) return;
-  isPanning=true; panStartX=e.clientX; panStartY=e.clientY;
-  panScrollL=mapArea.scrollLeft; panScrollT=mapArea.scrollTop;
-  mapArea.style.cursor='grabbing';
+  e.preventDefault();
+  startMapPan(e.clientX, e.clientY);
 });
-mapArea.addEventListener('mousemove', (e) => {
-  if (!isPanning) return;
-  mapArea.scrollLeft = panScrollL-(e.clientX-panStartX);
-  mapArea.scrollTop  = panScrollT-(e.clientY-panStartY);
-});
-const stopPan=()=>{ isPanning=false; mapArea.style.cursor='grab'; };
-mapArea.addEventListener('mouseup',    stopPan);
-mapArea.addEventListener('mouseleave', stopPan);
+mapArea.addEventListener('mousemove', (e) => moveMapPan(e.clientX, e.clientY, e));
+mapArea.addEventListener('mouseup', stopMapPan);
+mapArea.addEventListener('mouseleave', stopMapPan);
 
 // ─── MODALS ───
 function showModal(id, s) {
@@ -4696,7 +4997,7 @@ async function archiveGuestFromQueue(gid) {
     closeMenu();
     requestAnimationFrame(() => { try { fn(); } catch(err) { console.error('[FAB action]', err); } });
   };
-  document.getElementById('fabAddGuest')?.addEventListener('click', handleAction(() => openGuestModal()));
+  document.getElementById('fabAdminPanel')?.addEventListener('click', handleAction(() => { location.href='/admin.html'; }));
   document.getElementById('fabAddTable')?.addEventListener('click', handleAction(() => addNewTable()));
   document.getElementById('fabCheckouts')?.addEventListener('click', handleAction(() => showCheckoutsToday()));
 })();
@@ -4778,7 +5079,7 @@ document.addEventListener('keydown', (e) => {
   if (e.shiftKey && e.key==='?') { e.preventDefault(); showModal('shortcutsModal', true); return; }
   if (e.key==='Escape') { e.preventDefault(); closeAllModals(); return; }
   if (currentRole !== 'admin') return;
-  if (e.key==='n'||e.key==='N') { e.preventDefault(); openGuestModal(); }
+  if (e.key==='n'||e.key==='N') { e.preventDefault(); location.href='/admin.html'; }
   else if (e.key==='t'||e.key==='T') { e.preventDefault(); addNewTable(); }
   else if (e.key==='1') { e.preventDefault(); switchZoneByKey('main'); }
   else if (e.key==='2') { e.preventDefault(); switchZoneByKey('big_terrace'); }
@@ -5346,7 +5647,7 @@ onAuthStateChanged(auth, (user) => {
       setTimeout(() => {
         if (urlAction==='checkouts'  && typeof showCheckoutsToday==='function') showCheckoutsToday();
         if (urlAction==='all-guests' && typeof showAllGuests==='function')      showAllGuests();
-        if (urlAction==='add-guest'  && typeof openGuestModal==='function')     openGuestModal();
+        if (urlAction==='add-guest') location.href='/admin.html#guestForm';
       }, 1500);
     });
   }

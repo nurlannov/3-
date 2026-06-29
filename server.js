@@ -18,7 +18,14 @@ const app = express();
 app.set('trust proxy', 1);
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://3korony.vercel.app';
+const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS ||
+  process.env.ALLOWED_ORIGIN ||
+  'https://3korony.vercel.app,http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000'
+)
+  .split(',')
+  .map(x => x.trim())
+  .filter(Boolean);
 const SESSION_TTL_MS = parseInt(process.env.SESSION_TTL_MS || String(8 * 60 * 60 * 1000), 10);
 const CSRF_TTL_MS = parseInt(process.env.CSRF_TTL_MS || String(30 * 60 * 1000), 10);
 const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || '';
@@ -34,7 +41,7 @@ const VAPID_PUBLIC_KEYS = (process.env.VAPID_PUBLIC_KEYS || process.env.VAPID_PU
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@example.com';
 
-const allowedCollections = new Set(['guests', 'tables', 'audit_logs']);
+const allowedCollections = new Set(['guests', 'tables', 'audit_logs', 'hotel_settings', 'announcements', 'waiters', 'excursions', 'hotel_services', 'price_info', 'hotel_contacts', 'hotel_map']);
 const csrfPreAuth = new Map();
 const sessions = new Map();
 const latestSessionByUid = new Map();
@@ -73,7 +80,7 @@ function validateGuestPayload(input, partial = false) {
   const errors = [];
 
   if (!partial || Object.prototype.hasOwnProperty.call(data, 'room')) {
-    if (!/^[^<>{}\[\]]{1,20}$/.test(room)) throw new Error('Недопустимые символы в поле "Комната".');
+    if (!/^[^<>{}\[\]]{1,20}$/.test(String(data.room || ''))) errors.push('room contains invalid characters');
   }
   if (!partial || Object.prototype.hasOwnProperty.call(data, 'name')) {
     if (!/^[\p{L}\s-]{2,50}$/u.test(String(data.name || ''))) errors.push('name must contain 2-50 letters, spaces or hyphens');
@@ -82,10 +89,11 @@ function validateGuestPayload(input, partial = false) {
     if (!partial || Object.prototype.hasOwnProperty.call(data, field)) {
       const parsed = toIntRange(data[field], 0, 10);
       if (parsed === null) errors.push(`${field} must be an integer from 0 to 10`);
-      else data[field] = String(parsed);
+      else data[field] = parsed;
     }
   }
   if (Object.prototype.hasOwnProperty.call(data, 'notes')) data.notes = stripHtml(data.notes);
+  if (Object.prototype.hasOwnProperty.call(data, 'guestNotes')) data.guestNotes = stripHtml(data.guestNotes);
 
   if (errors.length) {
     const err = new Error(errors.join('; '));
@@ -102,6 +110,7 @@ function validateTablePayload(input) {
 function validateCollectionPayload(collectionName, data, partial = false) {
   if (collectionName === 'guests') return validateGuestPayload(data, partial);
   if (collectionName === 'tables') return validateTablePayload(data);
+  if (collectionName === 'announcements' || collectionName === 'hotel_settings' || collectionName === 'waiters' || collectionName === 'excursions' || collectionName === 'hotel_services' || collectionName === 'price_info' || collectionName === 'hotel_contacts' || collectionName === 'hotel_map') return sanitizePlainObject(data || {});
   if (collectionName === 'audit_logs') return sanitizePlainObject(data || {});
   return sanitizePlainObject(data || {});
 }
@@ -135,11 +144,11 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.gstatic.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", 'https://*.googleapis.com', 'https://*.firebaseio.com', 'wss://*.firebaseio.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       frameAncestors: ["'none'"],
@@ -152,14 +161,17 @@ app.use(helmet({
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin === ALLOWED_ORIGIN) return callback(null, true);
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn('[CORS] Blocked origin:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   credentials: true
 }));
-
 app.use('/api/', rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -170,14 +182,38 @@ app.use('/api/', rateLimit({
 
 app.use(express.json({ limit: '20kb' }));
 
+const publicFiles = new Map([
+  ['/', 'index.html'],
+  ['/index.html', 'index.html'],
+  ['/admin.html', 'admin.html'],
+  ['/guest.html', 'guest.html'],
+  ['/firebase-core.js', 'firebase-core.js'],
+  ['/manifest.json', 'manifest.json'],
+  ['/icon.svg', 'icon.svg'],
+  ['/sw.js', 'sw.js'],
+  ['/clear-sw.html', 'clear-sw.html']
+]);
+app.get([...publicFiles.keys()], (req, res) => {
+  if (req.path.endsWith('.html') || req.path === '/') res.set('Cache-Control', 'no-cache');
+  res.sendFile(publicFiles.get(req.path), { root: __dirname });
+});
+
 function checkOrigin(req, res, next) {
   const origin = req.headers.origin || '';
   const referer = req.headers.referer || '';
-  const allowed = (!origin && !referer) || origin === ALLOWED_ORIGIN || referer.startsWith(ALLOWED_ORIGIN);
-  if (!allowed) return res.status(403).json({ error: 'Forbidden origin' });
+
+  const allowed =
+    (!origin && !referer) ||
+    ALLOWED_ORIGINS.includes(origin) ||
+    ALLOWED_ORIGINS.some(base => referer.startsWith(base));
+
+  if (!allowed) {
+    console.warn('[Origin] Blocked request:', { origin, referer });
+    return res.status(403).json({ error: 'Forbidden origin' });
+  }
+
   next();
 }
-
 app.use('/api/', checkOrigin);
 
 function hasRole(userRole, allowed) {
@@ -330,6 +366,81 @@ app.get('/api/auth/me', authenticate, (req, res) => {
   res.json({ user: req.user, sessionId: req.session.id, csrfToken: req.session.csrfToken, expiresAt: req.session.expiresAt });
 });
 
+const guestViewLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many guest access attempts' }
+});
+
+app.post('/api/guest/view', guestViewLimiter, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const bodyKeys = Object.keys(req.body || {});
+  if (bodyKeys.some(key => key !== 'room')) {
+    return res.status(400).json({ error: 'Only room is accepted' });
+  }
+  const room = stripHtml(req.body?.room || '');
+  if (!/^[^<>{}\[\]]{1,20}$/.test(room)) {
+    return res.status(400).json({ error: 'Invalid room number' });
+  }
+  try {
+    const guestSnapshot = await db.collection('guests').where('room', '==', room).limit(25).get();
+    const guestDocs = guestSnapshot.docs.filter(item => item.data().status !== 'archived');
+    if (!guestDocs.length) return res.status(404).json({ error: 'Guest not found' });
+
+    const [settingsDoc, announcementsSnapshot, excursionsSnapshot, hotelServicesSnapshot] = await Promise.all([
+      db.collection('hotel_settings').doc('main').get(),
+      db.collection('announcements').where('active', '==', true).limit(50).get(),
+      db.collection('excursions').where('active', '==', true).limit(100).get(),
+      db.collection('hotel_services').where('active', '==', true).limit(100).get()
+    ]);
+    const guests = guestDocs.map(guestDoc => {
+      const source = guestDoc.data();
+      return sanitizePlainObject({
+        id: guestDoc.id,
+        room: source.room,
+        name: source.name,
+        adults: source.adults,
+        kids: source.kids,
+        in: source.in || null,
+        out: source.out,
+        outTime: source.outTime,
+        mealPlan: source.mealPlan,
+        calendar: source.calendar || [],
+        notes: source.guestNotes || ''
+      });
+    });
+    const announcements = announcementsSnapshot.docs.map(item => {
+      const data = item.data();
+      return sanitizePlainObject({
+        id: item.id,
+        title: data.title,
+        text: data.text,
+        titleRu: data.titleRu,
+        titleEn: data.titleEn,
+        textRu: data.textRu,
+        textEn: data.textEn,
+        important: !!data.important,
+        createdAt: data.createdAt || 0
+      });
+    });
+    const excursions = excursionsSnapshot.docs.map(item => sanitizePlainObject({ id: item.id, ...item.data() }));
+    const hotelServices = hotelServicesSnapshot.docs.map(item => sanitizePlainObject({ id: item.id, ...item.data() }));
+    res.json({
+      guests,
+      settings: sanitizePlainObject(settingsDoc.exists ? settingsDoc.data() : {}),
+      announcements,
+      publicInfo: sanitizePlainObject(settingsDoc.exists ? (settingsDoc.data().publicInfo || {}) : {}),
+      excursions,
+      hotel_services: hotelServices,
+      hotelServices
+    });
+  } catch (err) {
+    console.error('[Guest view]', err);
+    res.status(500).json({ error: 'Guest data unavailable' });
+  }
+});
 app.use('/api/collection', authenticate, requireCsrf);
 
 app.get('/api/collection/:name', requireRoles('admin', 'manager', 'waiter', 'chef'), async (req, res) => {
@@ -364,6 +475,7 @@ app.post('/api/collection/:name', requireRoles('admin', 'manager'), async (req, 
 app.patch('/api/collection/:name/:id', requireRoles('admin', 'manager', 'waiter'), async (req, res) => {
   const { name, id } = req.params;
   if (!allowedCollections.has(name) || name === 'audit_logs') return res.status(404).json({ error: 'Unknown collection' });
+  if (req.user.role === 'waiter' && name !== 'tables') return res.status(403).json({ error: 'Forbidden role' });
   const data = validateCollectionPayload(name, req.body, true);
   await db.collection(name).doc(id).update(data);
   await writeAudit(req, `${name}_update`, '', id);
@@ -441,7 +553,7 @@ function startServer() {
       cert: fs.readFileSync(certPath)
     }, app).listen(PORT, () => {
       console.log(`HTTPS API server listening on port ${PORT}`);
-      console.log(`Allowed origin: ${ALLOWED_ORIGIN}`);
+      console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
     });
     return;
   }
@@ -452,7 +564,7 @@ function startServer() {
 
   http.createServer(app).listen(PORT, () => {
     console.warn(`HTTP API server listening on port ${PORT}. Use HTTPS behind Nginx/Let's Encrypt in production.`);
-    console.log(`Allowed origin: ${ALLOWED_ORIGIN}`);
+    console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
   });
 }
 

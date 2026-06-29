@@ -2,13 +2,13 @@
  * Service Worker для «Три Короны»
  * 
  * Стратегия: Cache First для статических ассетов, Network Only для API.
- * Версия: tri-korony-shell-v4
+ * Версия: tri-korony-shell-v15
  */
 
 'use strict';
 
-const CACHE_NAME    = 'tri-korony-shell-v7';
-const SHELL_ASSETS  = ['/', '/index.html', '/manifest.json', '/icon.svg'];
+const CACHE_NAME    = 'tri-korony-shell-v15';
+const SHELL_ASSETS  = ['/', '/index.html', '/admin.html', '/guest.html', '/firebase-core.js', '/manifest.json', '/icon.svg'];
 
 // Паттерны запросов, которые НИКОГДА не кешируются
 const NO_CACHE_PATTERNS = [
@@ -83,6 +83,19 @@ self.addEventListener('fetch', (event) => {
         console.warn('[SW] Network error (no cache):', url, err.message);
         return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
       })
+    );
+    return;
+  }
+
+  // HTML pages: network first, so a newly deployed interface is not hidden by an old cache.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match('/index.html')))
     );
     return;
   }
