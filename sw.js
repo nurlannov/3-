@@ -2,12 +2,12 @@
  * Service Worker для «Три Короны»
  * 
  * Стратегия: Cache First для статических ассетов, Network Only для API.
- * Версия: tri-korony-shell-v15
+ * Версия: tri-korony-shell-v16
  */
 
 'use strict';
 
-const CACHE_NAME    = 'tri-korony-shell-v15';
+const CACHE_NAME    = 'tri-korony-shell-v16';
 const SHELL_ASSETS  = ['/', '/index.html', '/admin.html', '/guest.html', '/firebase-core.js', '/manifest.json', '/icon.svg'];
 
 // Паттерны запросов, которые НИКОГДА не кешируются

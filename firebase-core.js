@@ -65,8 +65,14 @@ export function validateGuest(data) {
   const room = validateRoom(data.room);
   const name = sanitizeText(data.name);
   if (!/^[\p{L}\s-]{2,50}$/u.test(name)) throw new Error('Имя должно содержать от 2 до 50 букв.');
-  const adults = toInt(data.adults), kids = toInt(data.kids);
+  const adultsRaw = String(data.adults ?? '').trim() || '0';
+  const kidsRaw = String(data.kids ?? '').trim() || '0';
+  if (!/^\d+$/.test(adultsRaw) || !/^\d+$/.test(kidsRaw)) throw new Error('Количество взрослых/детей не должно быть отрицательным.');
+  const adults = toInt(adultsRaw), kids = toInt(kidsRaw);
   if (adults > 99 || kids > 99) throw new Error('Проверьте количество взрослых и детей.');
-  if (!data.out) throw new Error('Укажите дату выезда.');
+  const inDate = parseLocalDate(data.in), outDate = parseLocalDate(data.out);
+  if (!inDate) throw new Error('Укажите дату заезда.');
+  if (!outDate) throw new Error('Укажите дату выезда.');
+  if (outDate < inDate) throw new Error('Дата выезда не должна быть раньше даты заезда.');
   return { ...data, room, name, adults, kids, notes:sanitizeText(data.notes), guestNotes:sanitizeText(data.guestNotes), outTime:normalizeOutTime(data.outTime) };
 }
