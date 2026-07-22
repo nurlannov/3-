@@ -541,12 +541,30 @@ body {
   max-width: 520px;
   max-height: 88vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+html.modal-open,
+body.modal-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.modal-open #overlay,
+body.modal-open .map-area {
+  touch-action: none;
+}
+
+body.modal-open .map-area {
+  overscroll-behavior: none;
 }
 
 .modal::-webkit-scrollbar { width: 4px; }
 .modal::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 4px; }
 
-#guestModal { z-index: 1100; }
+#guestModal { z-index: 1100; overscroll-behavior-y: contain; }
 #archiveDetailModal { z-index: 1100; }
 
 .modal h3 {
@@ -1421,6 +1439,18 @@ textarea { resize: vertical; min-height: 60px; }
 
 .fab-backdrop.show { display: block; }
 
+body.modal-open .fab-container,
+body.modal-open .bottom-nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.modal-open .fab-backdrop {
+  display: none !important;
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .fab-container { display: flex; }
 }
@@ -1759,7 +1789,7 @@ body.light .modal { box-shadow: 0 24px 80px rgba(0,0,0,0.2); }
   border-radius: var(--radius-sm);
   box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   z-index: 5000;
-  min-width: 200px;
+  min-width: 230px;
   padding: 6px 0;
   opacity: 0;
   pointer-events: none;
@@ -2290,6 +2320,235 @@ textarea:focus {
 }
 .table-side-panel .waiter-block { margin-top: 14px; }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-transfer {
+  border: 1px solid rgba(191,164,255,0.58);
+  background: linear-gradient(135deg, rgba(191,164,255,0.95), rgba(242,199,110,0.92));
+  color: #101827;
+}
+.btn-transfer:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 14px 32px rgba(191,164,255,0.22), 0 0 0 1px rgba(242,199,110,0.2);
+}
+.btn-archive {
+  border-color: rgba(255,102,132,0.35) !important;
+  color: var(--danger) !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.transfer-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(17,24,39,0.32);
+  border-top-color: rgba(17,24,39,0.9);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: -2px;
+  margin-right: 8px;
+}
+
+#transferGuestModal {
+  z-index: 1200;
+  max-width: 880px;
+  padding: 0;
+  overflow: hidden;
+}
+.transfer-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.045);
+}
+.transfer-modal-header h3 { margin: 0; }
+.transfer-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.07);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.18s ease;
+}
+.transfer-close-btn:hover { color: var(--text); background: rgba(255,255,255,0.13); }
+.transfer-modal-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.82fr) minmax(320px, 1.18fr);
+  min-height: 470px;
+  max-height: calc(88vh - 80px);
+}
+.transfer-guest-pane,
+.transfer-table-pane {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px 22px;
+}
+.transfer-guest-pane {
+  border-right: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.035);
+}
+.transfer-info-grid { display: grid; gap: 10px; }
+.transfer-info-row,
+.transfer-waiter-option,
+.transfer-table-option {
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.06);
+  border-radius: 14px;
+}
+.transfer-info-row { padding: 11px 13px; }
+.transfer-info-row span {
+  display: block;
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.transfer-info-row b {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.transfer-controls {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.transfer-controls input,
+.transfer-controls select { margin-top: 0; }
+.transfer-waiter-block {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+}
+.transfer-waiter-title {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 9px;
+}
+.transfer-waiter-options { display: grid; gap: 8px; }
+.transfer-waiter-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+.transfer-waiter-option input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--gold);
+}
+.transfer-waiter-hint { margin-top: 9px; color: var(--text-muted); font-size: 12px; }
+.transfer-options {
+  display: grid;
+  gap: 9px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.transfer-zone-title {
+  margin: 8px 2px 2px;
+  color: var(--gold-light);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.transfer-table-option {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.16s ease;
+}
+.transfer-table-option:hover { border-color: rgba(242,199,110,0.42); background: rgba(242,199,110,0.09); }
+.transfer-table-option.selected {
+  border-color: var(--gold);
+  background: rgba(242,199,110,0.14);
+  box-shadow: 0 0 0 1px rgba(242,199,110,0.18);
+}
+.transfer-table-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.transfer-table-main b { color: var(--gold-light); font-size: 15px; }
+.transfer-free-badge {
+  border: 1px solid rgba(86,243,183,0.4);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 800;
+}
+.transfer-table-meta { margin-top: 6px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.transfer-empty,
+.transfer-error {
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.045);
+}
+.transfer-error {
+  display: none;
+  margin-bottom: 10px;
+  border-color: rgba(255,102,132,0.35);
+  color: var(--danger);
+}
+.transfer-actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 0 0;
+  background: linear-gradient(180deg, rgba(18,27,43,0), rgba(18,27,43,0.96) 22%);
+}
+.transfer-actions .btn { margin-top: 0; }
+#confirmOverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  background: rgba(3,7,13,0.62);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  z-index: 5200;
+}
+#confirmModal { z-index: 5300; max-width: 440px; }
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.confirm-actions .btn { margin-top: 0; }
 .queue-drag-ghost {
   position: fixed !important;
   z-index: 9999;
@@ -2333,8 +2592,43 @@ textarea:focus {
   .modal {
     width: calc(100% - 22px);
     max-height: calc(100vh - 26px - env(safe-area-inset-bottom, 0));
+    max-height: calc(100dvh - 26px - env(safe-area-inset-bottom, 0));
     padding: 20px;
     border-radius: 24px;
+  }
+  #transferGuestModal {
+    width: calc(100% - 18px);
+    max-height: calc(100vh - 18px - env(safe-area-inset-bottom, 0));
+    max-height: calc(100dvh - 18px - env(safe-area-inset-bottom, 0));
+    padding: 0;
+  }
+  .transfer-modal-header {
+    padding: 18px 18px 13px;
+  }
+  .transfer-modal-body {
+    display: block;
+    min-height: 0;
+    max-height: calc(100vh - 92px - env(safe-area-inset-bottom, 0));
+    max-height: calc(100dvh - 92px - env(safe-area-inset-bottom, 0));
+    overflow-y: auto;
+  }
+  .transfer-guest-pane,
+  .transfer-table-pane {
+    padding: 16px 18px;
+    overflow: visible;
+  }
+  .transfer-guest-pane {
+    border-right: 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .transfer-controls {
+    grid-template-columns: 1fr;
+  }
+  .transfer-options {
+    max-height: 42vh;
+  }
+  .transfer-actions {
+    padding-bottom: max(2px, env(safe-area-inset-bottom, 0));
   }
   .table {
     width: 104px;
@@ -2739,7 +3033,8 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
     <div id="occData"></div>
     <div id="occNotes" class="note-preview" style="display:none"></div>
     <button id="arrBtn" class="btn" style="background:var(--pending-dim);border:1px solid var(--pending);color:var(--pending);" onclick="confirmArrival()">✅ Подтвердить прибытие</button>
-    <button class="btn btn-ghost" style="border-color:rgba(255,90,90,0.3);color:var(--danger);" onclick="freeTable()">Освободить стол</button>
+    <button id="transferGuestBtn" class="btn btn-transfer" onclick="openTransferGuestModal()">🔄 Пересадить гостя</button>
+    <button id="archiveTableBtn" class="btn btn-ghost btn-archive" onclick="freeTable()">Освободить и архивировать</button>
   </div>
   <div class="waiter-block">
     <label>👔 Официант за этим столом</label>
@@ -2819,8 +3114,11 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
   <div class="context-menu-item" data-action="assign">
     <span class="menu-icon">🪑</span> Посадить гостя
   </div>
+  <div class="context-menu-item" data-action="transfer">
+    <span class="menu-icon">🔄</span> Пересадить гостя
+  </div>
   <div class="context-menu-item" data-action="free">
-    <span class="menu-icon">🚪</span> Освободить стол
+    <span class="menu-icon">🚪</span> Освободить и архивировать
   </div>
   <div class="context-menu-divider"></div>
   <div class="context-menu-item" data-action="edit">
@@ -2848,7 +3146,8 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
       <div id="sidePanelOccData"></div>
       <div id="sidePanelOccNotes" class="note-preview" style="display:none"></div>
       <button id="sidePanelArrBtn" class="btn" style="background:var(--pending-dim);border:1px solid var(--pending);color:var(--pending);" onclick="confirmArrivalFromSide()">✅ Подтвердить прибытие</button>
-      <button class="btn btn-ghost" style="border-color:rgba(255,90,90,0.3);color:var(--danger);" onclick="freeTableFromSide()">Освободить стол</button>
+      <button id="sidePanelTransferGuestBtn" class="btn btn-transfer" onclick="openTransferGuestModal()">🔄 Пересадить гостя</button>
+      <button id="sidePanelArchiveTableBtn" class="btn btn-ghost btn-archive" onclick="freeTableFromSide()">Освободить и архивировать</button>
     </div>
     <div class="waiter-block">
       <label>👔 Официант за этим столом</label>
@@ -2859,9 +3158,54 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
   </div>
 </div>
 
+<!-- TRANSFER GUEST MODAL -->
+<div class="modal" id="transferGuestModal" aria-modal="true" role="dialog">
+  <div class="transfer-modal-header">
+    <h3>Пересадить гостя</h3>
+    <button class="transfer-close-btn" type="button" onclick="closeTransferGuestModal()" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="transfer-modal-body">
+    <div class="transfer-guest-pane">
+      <div id="transferGuestSummary" class="transfer-info-grid"></div>
+    </div>
+    <div class="transfer-table-pane">
+      <div id="transferModalError" class="transfer-error"></div>
+      <div class="transfer-controls">
+        <input id="transferTableSearch" type="text" inputmode="numeric" placeholder="Поиск стола" oninput="renderTransferTableOptions()">
+        <select id="transferZoneFilter" onchange="renderTransferTableOptions()">
+          <option value="">Все зоны</option>
+        </select>
+      </div>
+      <div class="transfer-waiter-block">
+        <div class="transfer-waiter-title">Официант после пересадки</div>
+        <div class="transfer-waiter-options">
+          <label class="transfer-waiter-option"><input type="radio" name="transferWaiterMode" value="old" onchange="handleTransferWaiterModeChange(this.value)"> Оставить официанта старого стола</label>
+          <label class="transfer-waiter-option"><input type="radio" name="transferWaiterMode" value="new" onchange="handleTransferWaiterModeChange(this.value)"> Использовать официанта нового стола</label>
+          <label class="transfer-waiter-option"><input type="radio" name="transferWaiterMode" value="none" onchange="handleTransferWaiterModeChange(this.value)"> Без официанта</label>
+        </div>
+        <div id="transferWaiterHint" class="transfer-waiter-hint"></div>
+      </div>
+      <div id="transferTableOptions" class="transfer-options"></div>
+      <div class="transfer-actions">
+        <button class="btn btn-ghost" type="button" onclick="closeTransferGuestModal()">Отмена</button>
+        <button id="transferSubmitBtn" class="btn btn-transfer" type="button" onclick="transferGuestToTable()" disabled>🔄 Пересадить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmOverlay"></div>
+<div class="modal" id="confirmModal" aria-modal="true" role="dialog">
+  <h3 id="confirmTitle">Подтверждение</h3>
+  <p id="confirmMessage" style="font-size:13px;color:var(--text-muted);line-height:1.6;"></p>
+  <div class="confirm-actions">
+    <button class="btn btn-ghost" id="confirmCancel" type="button">Отмена</button>
+    <button class="btn btn-danger" id="confirmOk" type="button">OK</button>
+  </div>
+</div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, limit, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, limit, where, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -3023,6 +3367,15 @@ let mealSelectedDate = getTodayStr();
 let mealActiveTab = 'all';
 let lastTapX = 0;
 let lastTapY = 0;
+let guestTransferInProgress = false;
+let lastDuplicateAssignmentsKey = '';
+let transferGuestState = {
+  sourceTableId: null,
+  sourceGuestId: null,
+  targetTableId: null,
+  waiterMode: 'old',
+  waiterModeTouched: false
+};
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const APP_ICON_SRC = '/icon.svg';
@@ -3051,6 +3404,28 @@ const clearTableGuestPayload = () => ({
   modifiedAt: null,
   seatedAt: null
 });
+function findDuplicateGuestAssignments() {
+  const byGuest = new Map();
+  allTables.forEach(table => {
+    if (!table?.guestId) return;
+    const key = String(table.guestId);
+    if (!byGuest.has(key)) byGuest.set(key, []);
+    byGuest.get(key).push({ id: table.id, number: table.number, zone: table.zone, guestName: table.guestName });
+  });
+
+  const duplicates = [...byGuest.entries()].filter(([, tables]) => tables.length > 1);
+  const duplicateKey = duplicates
+    .map(([guestId, tables]) => `${guestId}:${tables.map(t => t.id).sort().join(',')}`)
+    .sort()
+    .join('|');
+
+  if (duplicateKey && duplicateKey !== lastDuplicateAssignmentsKey) {
+    console.warn('[Data check] Один гость назначен на несколько столов:', duplicates.map(([guestId, tables]) => ({ guestId, tables })));
+  }
+  lastDuplicateAssignmentsKey = duplicateKey;
+  return duplicates;
+}
+window.findDuplicateGuestAssignments = findDuplicateGuestAssignments;
 
 function debounce(fn, ms) {
   let t;
@@ -3104,6 +3479,12 @@ const normalizeOutTime = (v) => {
 
 const outTimeLabel  = (v) => { const x=normalizeOutTime(v); if(x==='B') return 'После завтрака'; if(x==='L') return 'После обеда'; return 'После ужина'; };
 const mealPlanLabel = (v) => { if(v==='B') return 'Только завтрак'; if(v==='BL') return 'Завтрак + обед'; if(v==='FULL') return 'Полное питание'; return 'Индивидуально'; };
+const zoneLabel = (zone) => {
+  if (zone === 'main') return 'Зал';
+  if (zone === 'big_terrace') return 'Б. Терраса';
+  if (zone === 'small_terrace') return 'М. Терраса';
+  return zone ? String(zone) : 'Без зоны';
+};
 const cloneState    = (s) => ({ B: !!s.B, L: !!s.L, D: !!s.D });
 
 const getCurrentBaseCounts = () => ({
@@ -3293,10 +3674,12 @@ function showPromptModal(title, subtitle = '', defaultValue = '') {
     // Принудительно поднимаем z-index выше любых fab/queue/backdrop слоёв
     overlay.style.cssText = 'display:block; z-index:5000;';
     modal.style.cssText   = 'display:block; z-index:5100;';
+    setModalScrollLock(true);
     requestAnimationFrame(() => { try { input.focus(); input.select(); } catch(_){} });
     const close = (value) => {
       modal.style.display   = 'none';
       overlay.style.display = 'none';
+      refreshModalScrollLock();
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
       input.removeEventListener('keydown', onKey);
@@ -3313,6 +3696,53 @@ function showPromptModal(title, subtitle = '', defaultValue = '') {
   });
 }
 
+function showConfirmModal(title, message, confirmText = 'OK', cancelText = 'Отмена', danger = true) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirmModal');
+    const overlay = document.getElementById('confirmOverlay');
+    const titleEl = document.getElementById('confirmTitle');
+    const messageEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    if (!modal || !overlay || !titleEl || !messageEl || !okBtn || !cancelBtn) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    okBtn.textContent = confirmText;
+    cancelBtn.textContent = cancelText;
+    okBtn.className = danger ? 'btn btn-danger' : 'btn btn-transfer';
+    overlay.style.display = 'block';
+    modal.style.display = 'block';
+    setModalScrollLock(true);
+
+    const close = (value) => {
+      modal.style.display = 'none';
+      overlay.style.display = 'none';
+      refreshModalScrollLock();
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey, true);
+      resolve(value);
+    };
+    const onOk = () => close(true);
+    const onCancel = () => close(false);
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      close(false);
+    };
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey, true);
+  });
+}
 // ─── MOBILE QUEUE ───
 function toggleMobileQueue(open) {
   const sidebar  = document.getElementById('queueSidebar');
@@ -3909,6 +4339,7 @@ function _renderTables() {
         renderStatsAndQueue();
         renderTables();
         updatePendingCount();
+        findDuplicateGuestAssignments();
         if (currentRole === 'waiter') renderWaiterPanel();
         if (currentRole === 'chef') renderChefPanel();
         if (currentRole === 'meals') renderMealsPanel();
@@ -3945,6 +4376,7 @@ onSnapshot(collection(db, 'tables'), (sn) => {
   allTables = [];
   sn.forEach(d => allTables.push(createEmptyTableState({ id: d.id, ...d.data() })));
   saveToOfflineStore('tables', allTables).catch(() => {});
+  findDuplicateGuestAssignments();
   updatePendingCount();
   renderTables();
   if (currentRole === 'waiter') renderWaiterPanel();
@@ -4288,15 +4720,329 @@ window.confirmArrival = async () => {
 
 window.freeTable = async () => {
   const t = allTables.find(x => x.id===selectedTableId);
-  if (!t?.guestId) return;
+  if (!t?.guestId) return false;
+  const confirmed = await showConfirmModal(
+    'Освободить и архивировать',
+    'Гость будет убран со стола и перемещён в архив. Продолжить?',
+    'Переместить в архив',
+    'Отмена',
+    true
+  );
+  if (!confirmed) return false;
   try {
     await updateDoc(doc(db,'guests',t.guestId), { status:'archived', archivedAt: Date.now() });
     await updateDoc(doc(db,'tables',selectedTableId), clearTableGuestPayload());
     closeAllModals();
     showToast('🗃️ Гость перемещён в архив');
-  } catch(err) { alert('❌ Ошибка: ' + err.message); }
+    return true;
+  } catch(err) {
+    alert('❌ Ошибка: ' + err.message);
+    return false;
+  }
 };
 
+function resetTransferGuestState() {
+  transferGuestState = {
+    sourceTableId: null,
+    sourceGuestId: null,
+    targetTableId: null,
+    waiterMode: 'old',
+    waiterModeTouched: false
+  };
+}
+
+function isTransferTableAvailable(table, currentTableId) {
+  const t = createEmptyTableState(table || {});
+  if (!t.id || t.id === currentTableId) return false;
+  if (t.status && t.status !== 'free') return false;
+  if (t.guestId || t.guestName) return false;
+  if (t.isPending || t.isModified) return false;
+  return true;
+}
+
+function tableNumberSortValue(table) {
+  const n = Number.parseInt(String(table?.number ?? '').replace(/\D/g, ''), 10);
+  return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+}
+
+window.getAvailableTransferTables = function getAvailableTransferTables(currentTableId) {
+  return allTables
+    .filter(table => isTransferTableAvailable(table, currentTableId))
+    .sort((a, b) => {
+      const zoneCompare = zoneLabel(a.zone).localeCompare(zoneLabel(b.zone), 'ru');
+      if (zoneCompare !== 0) return zoneCompare;
+      const numCompare = tableNumberSortValue(a) - tableNumberSortValue(b);
+      if (numCompare !== 0) return numCompare;
+      return String(a.number ?? '').localeCompare(String(b.number ?? ''), 'ru');
+    });
+};
+
+window.resolveTransferWaiter = function resolveTransferWaiter(oldTable, newTable, selectedMode) {
+  if (selectedMode === 'new') return newTable?.waiter || null;
+  if (selectedMode === 'none') return null;
+  return oldTable?.waiter || null;
+};
+
+function setTransferError(message = '') {
+  const box = document.getElementById('transferModalError');
+  if (!box) return;
+  box.textContent = message;
+  box.style.display = message ? 'block' : 'none';
+}
+
+function setTransferWaiterMode(mode) {
+  transferGuestState.waiterMode = mode || 'old';
+  document.querySelectorAll('input[name="transferWaiterMode"]').forEach(input => {
+    input.checked = input.value === transferGuestState.waiterMode;
+  });
+  updateTransferWaiterHint();
+}
+
+window.handleTransferWaiterModeChange = function handleTransferWaiterModeChange(mode) {
+  transferGuestState.waiterModeTouched = true;
+  setTransferWaiterMode(mode);
+};
+
+function updateTransferSubmitState() {
+  const btn = document.getElementById('transferSubmitBtn');
+  if (!btn) return;
+  if (guestTransferInProgress) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="transfer-spinner"></span>Пересаживаю...';
+    return;
+  }
+  btn.disabled = !transferGuestState.targetTableId;
+  btn.innerHTML = '🔄 Пересадить';
+}
+
+function updateTransferWaiterHint() {
+  const hint = document.getElementById('transferWaiterHint');
+  if (!hint) return;
+  const oldTable = allTables.find(t => t.id === transferGuestState.sourceTableId);
+  const newTable = allTables.find(t => t.id === transferGuestState.targetTableId);
+  const waiter = window.resolveTransferWaiter(oldTable, newTable, transferGuestState.waiterMode);
+  hint.textContent = waiter ? `Будет назначен: ${waiter}` : 'После пересадки официант не будет назначен';
+}
+
+function renderTransferGuestSummary(table, guest) {
+  const summary = getMealSummaryForDay(guest, getTodayStr());
+  const container = document.getElementById('transferGuestSummary');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="transfer-info-row"><span>Гость</span><b>${sanitize(guest?.name || 'Гость')}</b></div>
+    <div class="transfer-info-row"><span>Комната</span><b>№${sanitize(guest?.room || '-')}</b></div>
+    <div class="transfer-info-row"><span>Текущий стол</span><b>№${sanitize(table?.number || '-')}</b></div>
+    <div class="transfer-info-row"><span>Текущая зона</span><b>${sanitize(zoneLabel(table?.zone))}</b></div>
+    <div class="transfer-info-row"><span>Официант</span><b>${sanitize(table?.waiter || 'Не назначен')}</b></div>
+    <div class="transfer-info-row"><span>Гости</span><b>${toInt(guest?.adults)} взрослых · ${toInt(guest?.kids)} детей</b></div>
+    <div class="transfer-info-row"><span>Питание сегодня</span><b>${sanitize(summary.full)}</b></div>
+  `;
+}
+
+function updateTransferZoneFilterOptions(currentTableId) {
+  const select = document.getElementById('transferZoneFilter');
+  if (!select) return;
+  const previous = select.value;
+  const zones = [...new Set(window.getAvailableTransferTables(currentTableId).map(t => t.zone || ''))]
+    .sort((a, b) => zoneLabel(a).localeCompare(zoneLabel(b), 'ru'));
+  select.innerHTML = '<option value="">Все зоны</option>';
+  zones.forEach(zone => {
+    const option = document.createElement('option');
+    option.value = zone;
+    option.textContent = zoneLabel(zone);
+    select.appendChild(option);
+  });
+  if (zones.includes(previous)) select.value = previous;
+}
+
+window.openTransferGuestModal = function openTransferGuestModal(tableId = selectedTableId) {
+  if (guestTransferInProgress) return;
+  const table = createEmptyTableState(allTables.find(t => t.id === tableId) || {});
+  const guest = table.guestId ? allGuests.find(g => g.id === table.guestId) : null;
+  if (!table.id || !guest) {
+    showToast('❌ За этим столом нет гостя');
+    return;
+  }
+
+  transferGuestState = {
+    sourceTableId: table.id,
+    sourceGuestId: table.guestId,
+    targetTableId: null,
+    waiterMode: 'old',
+    waiterModeTouched: false
+  };
+
+  setTransferError('');
+  renderTransferGuestSummary(table, guest);
+  document.getElementById('transferTableSearch').value = '';
+  updateTransferZoneFilterOptions(table.id);
+  setTransferWaiterMode('old');
+  renderTransferTableOptions();
+  showModal('transferGuestModal', true);
+};
+
+window.closeTransferGuestModal = function closeTransferGuestModal() {
+  const modal = document.getElementById('transferGuestModal');
+  if (modal) modal.style.display = 'none';
+  resetTransferGuestState();
+  setTransferError('');
+  if (!hasOpenModal()) {
+    document.getElementById('overlay').style.display = 'none';
+  }
+  refreshModalScrollLock();
+};
+
+window.renderTransferTableOptions = function renderTransferTableOptions() {
+  const container = document.getElementById('transferTableOptions');
+  if (!container) return;
+  const search = (document.getElementById('transferTableSearch')?.value || '').trim().toLowerCase();
+  const zone = document.getElementById('transferZoneFilter')?.value || '';
+  const available = window.getAvailableTransferTables(transferGuestState.sourceTableId);
+  const filtered = available.filter(table => {
+    const numberMatches = !search || String(table.number || '').toLowerCase().includes(search);
+    const zoneMatches = !zone || (table.zone || '') === zone;
+    return numberMatches && zoneMatches;
+  });
+
+  if (transferGuestState.targetTableId && !filtered.some(table => table.id === transferGuestState.targetTableId)) {
+    transferGuestState.targetTableId = null;
+  }
+
+  container.innerHTML = '';
+  if (!available.length) {
+    container.innerHTML = '<div class="transfer-empty">Свободных столов нет</div>';
+    updateTransferSubmitState();
+    updateTransferWaiterHint();
+    return;
+  }
+  if (!filtered.length) {
+    container.innerHTML = '<div class="transfer-empty">Ничего не найдено</div>';
+    updateTransferSubmitState();
+    updateTransferWaiterHint();
+    return;
+  }
+
+  const groups = new Map();
+  filtered.forEach(table => {
+    const label = zoneLabel(table.zone);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(table);
+  });
+
+  groups.forEach((items, label) => {
+    const title = document.createElement('div');
+    title.className = 'transfer-zone-title';
+    title.textContent = label;
+    container.appendChild(title);
+
+    items.forEach(table => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'transfer-table-option' + (table.id === transferGuestState.targetTableId ? ' selected' : '');
+      button.innerHTML = `
+        <div class="transfer-table-main"><b>Стол №${sanitize(table.number || '-')}</b><span class="transfer-free-badge">Свободен</span></div>
+        <div class="transfer-table-meta">${sanitize(zoneLabel(table.zone))}${table.waiter ? ` · 👔 ${sanitize(table.waiter)}` : ''}</div>
+      `;
+      button.addEventListener('click', () => selectTransferTargetTable(table.id));
+      container.appendChild(button);
+    });
+  });
+
+  updateTransferSubmitState();
+  updateTransferWaiterHint();
+};
+
+window.selectTransferTargetTable = function selectTransferTargetTable(tableId) {
+  const target = window.getAvailableTransferTables(transferGuestState.sourceTableId).find(table => table.id === tableId);
+  if (!target) {
+    transferGuestState.targetTableId = null;
+    showToast('⚠️ Этот стол уже занят. Выберите другой.');
+    renderTransferTableOptions();
+    return;
+  }
+  transferGuestState.targetTableId = target.id;
+  if (!transferGuestState.waiterModeTouched) {
+    setTransferWaiterMode(target.waiter ? 'new' : 'old');
+  }
+  renderTransferTableOptions();
+};
+
+window.transferGuestToTable = async function transferGuestToTable() {
+  if (guestTransferInProgress || !transferGuestState.sourceTableId || !transferGuestState.targetTableId) return;
+
+  const sourceTableId = transferGuestState.sourceTableId;
+  const targetTableId = transferGuestState.targetTableId;
+  const sourceGuestId = transferGuestState.sourceGuestId;
+  const selectedMode = document.querySelector('input[name="transferWaiterMode"]:checked')?.value || transferGuestState.waiterMode;
+
+  guestTransferInProgress = true;
+  setTransferError('');
+  updateTransferSubmitState();
+
+  try {
+    const result = await runTransaction(db, async (transaction) => {
+      const oldRef = doc(db, 'tables', sourceTableId);
+      const newRef = doc(db, 'tables', targetTableId);
+      const oldSnap = await transaction.get(oldRef);
+      const newSnap = await transaction.get(newRef);
+
+      if (!oldSnap.exists()) throw new Error('SOURCE_TABLE_MISSING');
+      if (!newSnap.exists()) throw new Error('TARGET_TABLE_MISSING');
+
+      const oldTable = createEmptyTableState({ id: oldSnap.id, ...oldSnap.data() });
+      const newTable = createEmptyTableState({ id: newSnap.id, ...newSnap.data() });
+      if (oldTable.id === newTable.id) throw new Error('SAME_TABLE');
+      if (!oldTable.guestId || oldTable.guestId !== sourceGuestId) throw new Error('SOURCE_CHANGED');
+      if (newTable.guestId || newTable.guestName) throw new Error('TARGET_OCCUPIED');
+      if (newTable.isPending || newTable.isModified || (newTable.status && newTable.status !== 'free')) throw new Error('TARGET_INVALID');
+
+      const guestRef = doc(db, 'guests', oldTable.guestId);
+      const guestSnap = await transaction.get(guestRef);
+      if (!guestSnap.exists()) throw new Error('GUEST_MISSING');
+      const guest = { id: guestSnap.id, ...guestSnap.data() };
+      const now = Date.now();
+      const waiter = window.resolveTransferWaiter(oldTable, newTable, selectedMode);
+
+      transaction.update(oldRef, clearTableGuestPayload());
+      transaction.update(newRef, {
+        guestId: guest.id,
+        guestName: guest.name || oldTable.guestName || null,
+        isPending: !!oldTable.isPending,
+        isModified: !!oldTable.isModified,
+        modificationText: oldTable.modificationText || '',
+        modifiedAt: oldTable.modifiedAt || null,
+        seatedAt: oldTable.seatedAt || now,
+        waiter: waiter || null
+      });
+      transaction.update(guestRef, { status: 'seated', updatedAt: now });
+
+      return { guest, oldTable, newTable };
+    });
+
+    await logAction(
+      'Пересадка гостя',
+      `${result.guest.name || 'Гость'} (№${result.guest.room || '-'}): стол ${result.oldTable.number || '?'} → стол ${result.newTable.number || '?'}`,
+      result.newTable.id
+    );
+    showToast(`🔄 Гость ${result.guest.name || ''} пересажен со стола №${result.oldTable.number || '?'} за стол №${result.newTable.number || '?'}`);
+    closeAllModals();
+  } catch (err) {
+    console.error('transferGuestToTable error:', err);
+    const code = err?.message || '';
+    if (code === 'TARGET_OCCUPIED') {
+      transferGuestState.targetTableId = null;
+      setTransferError('Этот стол уже занят. Выберите другой стол.');
+      showToast('⚠️ Этот стол уже занят. Выберите другой.');
+      renderTransferTableOptions();
+    } else {
+      setTransferError('Не удалось пересадить гостя. Проверьте выбранный стол и попробуйте снова.');
+      showToast('❌ Не удалось пересадить гостя');
+    }
+  } finally {
+    guestTransferInProgress = false;
+    updateTransferSubmitState();
+  }
+};
 // ─── LIST MODAL ───
 const openList = (title, mode, items, withSearch=false) => {
   currentListMode  = mode;
@@ -4708,24 +5454,92 @@ mapArea.addEventListener('mouseup',    stopPan);
 mapArea.addEventListener('mouseleave', stopPan);
 
 // ─── MODALS ───
+function hasOpenModal() {
+  return [...document.querySelectorAll('.modal')].some(m => m.style.display === 'block');
+}
+
+function closeFloatingActions() {
+  const fabMainBtn = document.getElementById('fabMainBtn');
+  const fabMenu = document.getElementById('fabMenu');
+  const fabBackdrop = document.getElementById('fabBackdrop');
+  fabMenu?.classList.remove('open');
+  fabBackdrop?.classList.remove('show');
+  if (fabMainBtn) {
+    fabMainBtn.setAttribute('aria-expanded', 'false');
+    fabMainBtn.style.transform = '';
+  }
+}
+
+function setModalScrollLock(locked) {
+  document.documentElement.classList.toggle('modal-open', locked);
+  document.body.classList.toggle('modal-open', locked);
+  if (locked) {
+    closeFloatingActions();
+    isPanning = false;
+    mapArea.style.cursor = 'grab';
+  }
+}
+
+function refreshModalScrollLock() {
+  setModalScrollLock(hasOpenModal());
+}
+
+let modalTouchStartY = 0;
+function getTouchedOpenModal(target) {
+  const modal = target.closest?.('.modal');
+  return modal && modal.style.display === 'block' ? modal : null;
+}
+
+document.addEventListener('touchstart', (e) => {
+  if (!document.body.classList.contains('modal-open')) return;
+  modalTouchStartY = e.touches?.[0]?.clientY || 0;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!document.body.classList.contains('modal-open')) return;
+  const modal = getTouchedOpenModal(e.target);
+  if (!modal) {
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
+  const currentY = e.touches?.[0]?.clientY || modalTouchStartY;
+  const deltaY = currentY - modalTouchStartY;
+  const maxScroll = modal.scrollHeight - modal.clientHeight;
+  if (maxScroll <= 0) {
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
+  const atTop = modal.scrollTop <= 0;
+  const atBottom = modal.scrollTop >= maxScroll - 1;
+  if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+    if (e.cancelable) e.preventDefault();
+  }
+}, { passive: false });
+
 function showModal(id, s) {
   document.getElementById(id).style.display      = s ? 'block' : 'none';
   document.getElementById('overlay').style.display = s ? 'block' : 'none';
+  refreshModalScrollLock();
 }
 
 window.closeModal = (id) => {
   document.getElementById(id).style.display = 'none';
   if (id==='guestModal') { editingGuestId=null; selectedDayIndex=null; }
-  if (![...document.querySelectorAll('.modal')].some(m => m.style.display==='block'))
-    document.getElementById('overlay').style.display = 'none';
+  if (!hasOpenModal()) document.getElementById('overlay').style.display = 'none';
+  refreshModalScrollLock();
 };
 
 window.closeAllModals = () => {
   document.querySelectorAll('.modal').forEach(m => m.style.display='none');
   document.getElementById('overlay').style.display = 'none';
+  document.getElementById('confirmOverlay').style.display = 'none';
   closeTableSidePanel();
+  resetTransferGuestState();
   selectedDayIndex = null;
   editingGuestId   = null;
+  refreshModalScrollLock();
 };
 
 // ─── DESKTOP TABLE SIDE PANEL ───
@@ -4853,8 +5667,8 @@ window.confirmArrivalFromSide = async () => {
 
 window.freeTableFromSide = async () => {
   if (!selectedTableId) return;
-  await freeTable();
-  closeTableSidePanel();
+  const archived = await freeTable();
+  if (archived) closeTableSidePanel();
 };
 
 window.deleteTableFromSide = async () => {
@@ -4961,6 +5775,7 @@ async function archiveGuestFromQueue(gid) {
   const closeMenu = () => { menuOpen=false; fabMenu.classList.remove('open'); fabBackdrop?.classList.remove('show'); fabMainBtn.setAttribute('aria-expanded','false'); fabMainBtn.style.transform=''; };
   const toggle = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (document.body.classList.contains('modal-open')) { closeMenu(); return; }
     const now = Date.now();
     if (now - lastToggle < 250) return; // защита от двойного срабатывания touch+click
     lastToggle = now;
@@ -5335,10 +6150,12 @@ document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
   function showContextMenu(x, y, tId, tData) {
     activeTableId=tId; activeTableData=tData;
     const hasGuest = !!tData.guestId;
-    contextMenu.querySelector('[data-action="assign"]').style.display = hasGuest ? 'none' : 'flex';
+    const canTransfer = hasGuest && allGuests.some(g => g.id === tData.guestId);
+    contextMenu.querySelector('[data-action="assign"]').style.display   = hasGuest ? 'none' : 'flex';
+    contextMenu.querySelector('[data-action="transfer"]').style.display = canTransfer ? 'flex' : 'none';
     contextMenu.querySelector('[data-action="free"]').style.display   = hasGuest ? 'flex' : 'none';
     contextMenu.querySelector('[data-action="edit"]').style.display   = hasGuest ? 'flex' : 'none';
-    const menuW = 200, menuH = contextMenu.offsetHeight||180;
+    const menuW = 230, menuH = contextMenu.offsetHeight||200;
     let posX=Math.min(x, window.innerWidth-menuW-10), posY=Math.min(y, window.innerHeight-menuH-10);
     if (posX<0) posX=10; if (posY<0) posY=10;
     contextMenu.style.left=posX+'px'; contextMenu.style.top=posY+'px';
@@ -5378,6 +6195,7 @@ document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
       const action = item.dataset.action;
       if (!activeTableId||!activeTableData) return;
       if (action==='assign') openTableModal(activeTableId, activeTableData);
+      else if (action==='transfer') { selectedTableId=activeTableId; openTransferGuestModal(activeTableId); }
       else if (action==='free') { selectedTableId=activeTableId; await freeTable(); }
       else if (action==='edit' && activeTableData.guestId) openGuestModal(activeTableData.guestId);
       else if (action==='waiter') openTableModal(activeTableId, activeTableData);
@@ -5517,8 +6335,9 @@ window.clearOldAuditLogs = async () => {
   const origFree = window.freeTable;
   window.freeTable = async function() {
     const t=allTables.find(x=>x.id===selectedTableId), g=t?.guestId?allGuests.find(x=>x.id===t.guestId):null;
-    await origFree.apply(this, arguments);
-    if (g) logAction('Освобождён стол', `${g.name} (№${g.room})`, selectedTableId);
+    const archived = await origFree.apply(this, arguments);
+    if (archived && g) logAction('Освобождён стол', `${g.name} (№${g.room})`, selectedTableId);
+    return archived;
   };
 
   const origRestore = window.restoreGuestFromArchive;
