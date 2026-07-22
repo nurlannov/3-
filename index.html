@@ -2391,6 +2391,14 @@ textarea:focus {
   min-height: 470px;
   max-height: calc(88vh - 80px);
 }
+.transfer-modal-body,
+.transfer-guest-pane,
+.transfer-table-pane,
+.transfer-options {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
 .transfer-guest-pane,
 .transfer-table-pane {
   min-width: 0;
@@ -5485,14 +5493,33 @@ function refreshModalScrollLock() {
 }
 
 let modalTouchStartY = 0;
+let modalTouchScroller = null;
+
 function getTouchedOpenModal(target) {
   const modal = target.closest?.('.modal');
   return modal && modal.style.display === 'block' ? modal : null;
 }
 
+function getScrollableModalElement(target) {
+  const modal = getTouchedOpenModal(target);
+  if (!modal) return null;
+
+  let el = target instanceof Element ? target : target?.parentElement;
+  while (el && el !== modal.parentElement) {
+    const style = window.getComputedStyle(el);
+    const scrollableY = /(auto|scroll|overlay)/.test(style.overflowY) || el === modal;
+    if (scrollableY && el.scrollHeight > el.clientHeight + 1) return el;
+    if (el === modal) break;
+    el = el.parentElement;
+  }
+
+  return null;
+}
+
 document.addEventListener('touchstart', (e) => {
   if (!document.body.classList.contains('modal-open')) return;
   modalTouchStartY = e.touches?.[0]?.clientY || 0;
+  modalTouchScroller = getScrollableModalElement(e.target);
 }, { passive: true });
 
 document.addEventListener('touchmove', (e) => {
@@ -5503,16 +5530,16 @@ document.addEventListener('touchmove', (e) => {
     return;
   }
 
+  const scroller = modalTouchScroller || getScrollableModalElement(e.target);
+  if (!scroller) return;
+
   const currentY = e.touches?.[0]?.clientY || modalTouchStartY;
   const deltaY = currentY - modalTouchStartY;
-  const maxScroll = modal.scrollHeight - modal.clientHeight;
-  if (maxScroll <= 0) {
-    if (e.cancelable) e.preventDefault();
-    return;
-  }
+  const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+  if (maxScroll <= 0) return;
 
-  const atTop = modal.scrollTop <= 0;
-  const atBottom = modal.scrollTop >= maxScroll - 1;
+  const atTop = scroller.scrollTop <= 0;
+  const atBottom = scroller.scrollTop >= maxScroll - 1;
   if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
     if (e.cancelable) e.preventDefault();
   }
